@@ -61,11 +61,8 @@ class Settings_Page {
             <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
             <form action="options.php" method="post">
                 <?php
-                // Output security fields for the registered setting group.
                 settings_fields( self::SETTINGS_GROUP );
-                // Output the settings sections and their fields.
                 do_settings_sections( 'data-engine-for-elementor' );
-                // Output save settings button.
                 submit_button( esc_html__( 'Save Settings', 'data-engine-for-elementor' ) );
                 ?>
             </form>
@@ -79,29 +76,58 @@ class Settings_Page {
      * @since 0.1.0
      */
     public function register_settings(): void {
-        // Register the main option group.
+        // --- NOWA LOGIKA: Obsługa przycisku do czyszczenia cache ---
+        if ( isset( $_GET['de_action'] ) && $_GET['de_action'] === 'clear_cache' && check_admin_referer('de_clear_cache_nonce') ) {
+            Plugin::instance()->cache_manager->clear_all();
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('DataEngine cache has been cleared.', 'data-engine-for-elementor') . '</p></div>';
+            });
+        }
+        
         register_setting(
             self::SETTINGS_GROUP,
             self::OPTION_NAME,
             [ 'sanitize_callback' => [ $this, 'sanitize_options' ] ]
         );
+        
+        // --- Sekcja General (istniejąca) ---
+        add_settings_section( 'data_engine_general_section', esc_html__( 'General Settings', 'data-engine-for-elementor' ), '__return_false', 'data-engine-for-elementor' );
+        add_settings_field( 'data_engine_debug_mode', esc_html__( 'Debug Mode', 'data-engine-for-elementor' ), [ $this, 'render_debug_mode_field' ], 'data-engine-for-elementor', 'data_engine_general_section' );
 
-        // Add the main settings section.
-        add_settings_section(
-            'data_engine_general_section',
-            esc_html__( 'General Settings', 'data-engine-for-elementor' ),
-            '__return_false', // No callback needed for the section description.
-            'data-engine-for-elementor'
-        );
+        // --- NOWA SEKCJA: Caching ---
+        add_settings_section( 'data_engine_caching_section', esc_html__( 'Performance & Caching', 'data-engine-for-elementor' ), '__return_false', 'data-engine-for-elementor' );
+        add_settings_field( 'data_engine_enable_caching', esc_html__( 'Enable Widget Cache', 'data-engine-for-elementor' ), [ $this, 'render_enable_caching_field' ], 'data-engine-for-elementor', 'data_engine_caching_section' );
+        add_settings_field( 'data_engine_cache_expiration', esc_html__( 'Cache Expiration', 'data-engine-for-elementor' ), [ $this, 'render_cache_expiration_field' ], 'data-engine-for-elementor', 'data_engine_caching_section' );
+        add_settings_field( 'data_engine_clear_cache', esc_html__( 'Clear Cache', 'data-engine-for-elementor' ), [ $this, 'render_clear_cache_button' ], 'data-engine-for-elementor', 'data_engine_caching_section' );
+    }
 
-        // Add the "Debug Mode" field to our section.
-        add_settings_field(
-            'data_engine_debug_mode',
-            esc_html__( 'Debug Mode', 'data-engine-for-elementor' ),
-            [ $this, 'render_debug_mode_field' ],
-            'data-engine-for-elementor',
-            'data_engine_general_section'
-        );
+    public function render_enable_caching_field(): void {
+        $options = get_option( self::OPTION_NAME, [] );
+        $caching_enabled = $options['enable_caching'] ?? false;
+        ?>
+        <label for="data_engine_enable_caching">
+            <input type="checkbox" id="data_engine_enable_caching" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[enable_caching]" value="1" <?php checked( $caching_enabled, 1 ); ?>>
+            <?php esc_html_e( 'Enable server-side caching for widgets.', 'data-engine-for-elementor' ); ?>
+        </label>
+        <p class="description"><?php esc_html_e( 'Dramatically improves performance by caching the final HTML output of widgets. Cache is automatically cleared when a post is saved.', 'data-engine-for-elementor' ); ?></p>
+        <?php
+    }
+
+    public function render_cache_expiration_field(): void {
+        $options = get_option( self::OPTION_NAME, [] );
+        $expiration = $options['cache_expiration'] ?? HOUR_IN_SECONDS;
+        ?>
+        <input type="number" id="data_engine_cache_expiration" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[cache_expiration]" value="<?php echo esc_attr( $expiration ); ?>" class="small-text">
+        <p class="description"><?php esc_html_e( 'Time in seconds for how long the cache should be stored. Default is 3600 (1 hour).', 'data-engine-for-elementor' ); ?></p>
+        <?php
+    }
+
+    public function render_clear_cache_button(): void {
+        $url = wp_nonce_url( admin_url('options-general.php?page=data-engine-for-elementor&de_action=clear_cache'), 'de_clear_cache_nonce' );
+        ?>
+        <a href="<?php echo esc_url($url); ?>" class="button button-secondary"><?php esc_html_e( 'Clear All DataEngine Caches', 'data-engine-for-elementor' ); ?></a>
+        <p class="description"><?php esc_html_e( 'Manually clear all cached widget outputs. This is useful during development or after major changes.', 'data-engine-for-elementor' ); ?></p>
+        <?php
     }
     
     /**
@@ -127,20 +153,13 @@ class Settings_Page {
         <?php
     }
 
-    /**
-     * Sanitizes the options before saving them to the database.
-     *
-     * @since 0.1.0
-     * @param array $input The raw input from the settings form.
-     * @return array The sanitized options.
-     */
     public function sanitize_options( array $input ): array {
         $sanitized_options = [];
-        // Sanitize the debug_mode checkbox. It's either true (if '1') or false.
         $sanitized_options['debug_mode'] = isset( $input['debug_mode'] ) && '1' === $input['debug_mode'];
         
-        Logger::log( 'Settings saved. Debug mode is now ' . ($sanitized_options['debug_mode'] ? 'ON' : 'OFF') . '.', 'INFO' );
-
+        $sanitized_options['enable_caching'] = isset( $input['enable_caching'] ) && '1' === $input['enable_caching'];
+        $sanitized_options['cache_expiration'] = isset( $input['cache_expiration'] ) ? absint( $input['cache_expiration'] ) : HOUR_IN_SECONDS;
+        
         return $sanitized_options;
     }
 }

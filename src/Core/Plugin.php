@@ -13,6 +13,7 @@ final class Plugin {
     private static ?self $_instance = null;
     public ?\DataEngine\Engine\Parser $parser = null;
     public ?\DataEngine\Engine\Data_Provider $data_provider = null;
+    public ?Cache_Manager $cache_manager = null;
 
     public static function instance(): self {
         if ( is_null( self::$_instance ) ) {
@@ -22,8 +23,7 @@ final class Plugin {
     }
 
     private function __construct() {
-        // We hook into 'plugins_loaded' which is the standard, reliable way
-        // to initialize a plugin. It runs after all plugins are loaded.
+         $this->cache_manager = new Cache_Manager();
         add_action( 'plugins_loaded', [ $this, 'init' ] );
     }
     
@@ -45,6 +45,7 @@ final class Plugin {
 
         // Initialize components that add hooks.
         $this->init_components();
+        add_action( 'save_post', [ $this, 'clear_post_cache' ] );
     }
     
     /**
@@ -100,5 +101,11 @@ final class Plugin {
     }
     public function admin_notice_missing_acf() {
         echo '<div class="error"><p>DataEngine: <strong>Advanced Custom Fields (ACF)</strong> is not installed or activated. The plugin will not work.</p></div>';
+    }
+
+    public function clear_post_cache( int $post_id ): void {
+        // For now, we clear all caches. This is the safest approach.
+        // A more granular approach could be developed later if needed.
+        $this->cache_manager->clear_all();
     }
 }

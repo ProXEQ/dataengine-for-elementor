@@ -211,4 +211,9 @@ class Parser {
         }
         return $parsed_filters;
     }
+
+    public function evaluate( string $condition_string, ?int $context_post_id = null ): bool {
+        // We reuse the private evaluate_condition method, passing null for the loop context.
+        return $this->evaluate_condition( $condition_string, $context_post_id, null );
+    }
 }

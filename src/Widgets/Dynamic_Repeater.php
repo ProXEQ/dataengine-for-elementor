@@ -89,6 +89,18 @@ class Dynamic_Repeater extends Widget_Base
     }
 
     protected function render(): void {
+        $cache_manager = Plugin::instance()->cache_manager;
+
+        if ( $cache_manager->is_enabled() ) {
+            $cache_key = $cache_manager->generate_key( $this );
+            $cached_html = $cache_manager->get( $cache_key );
+            if ( false !== $cached_html ) {
+                echo $cached_html;
+                return;
+            }
+        }
+
+        ob_start();
         $settings = $this->get_settings_for_display();
         $repeater_field_name = $settings['repeater_field_name'];
 
@@ -101,26 +113,28 @@ class Dynamic_Repeater extends Widget_Base
 
         if ( ! empty( $repeater_data ) && is_array( $repeater_data ) ) {
             
-            // --- NOWA LOGIKA BUFOROWANIA ---
             $html_parts = [];
             
-            // Loop through each row and add the processed HTML to an array.
             foreach ( $repeater_data as $row_data ) {
                 $html_parts[] = $parser->process_loop_item( $settings['item_template'], $row_data );
             }
             
-            // Process header and footer templates.
             $header = $parser->process( $settings['header_template'] );
             $footer = $parser->process( $settings['footer_template'] );
             
-            // Output the final, assembled HTML in a single operation.
             echo $header . implode( '', $html_parts ) . $footer;
-            // --- KONIEC NOWEJ LOGIKI BUFOROWANIA ---
 
         } else {
             // Handle the "no results" case.
             echo $parser->process( $settings['no_results_template'] );
         }
+        $final_html = ob_get_clean();
+        
+        if ( $cache_manager->is_enabled() && isset($cache_key) ) {
+            $cache_manager->set( $cache_key, $final_html );
+        }
+
+        echo $final_html;
     }
 
     /**

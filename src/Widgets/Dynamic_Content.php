@@ -2,6 +2,7 @@
 namespace DataEngine\Widgets;
 
 use Elementor\Controls_Manager;
+use DataEngine\Core\Plugin;
 
 /**
  * Dynamic Content Widget.
@@ -96,20 +97,36 @@ class Dynamic_Content extends Widget_Base {
      * @access protected
      */
     protected function render(): void {
+        $cache_manager = Plugin::instance()->cache_manager;
+
+        // Try to fetch from cache first
+        if ( $cache_manager->is_enabled() ) {
+            $cache_key = $cache_manager->generate_key( $this );
+            $cached_html = $cache_manager->get( $cache_key );
+            if ( false !== $cached_html ) {
+                echo $cached_html;
+                return; // Cache HIT, we're done.
+            }
+        }
+        
+        // --- Cache MISS, generate the content ---
+        ob_start(); // Start output buffering
+        
         $settings = $this->get_settings_for_display();
         $raw_content = $settings['template'];
         
-        if ( empty( $raw_content ) ) {
-            return;
+        if ( ! empty( $raw_content ) ) {
+            $processed_content = $this->get_parser()->process( $raw_content, get_the_ID() );
+            echo wp_kses_post( $processed_content );
         }
 
-        // Use our central parser to process the content.
-        // The get_id() method provides the current post's ID for context.
-        $processed_content = $this->get_parser()->process( $raw_content, get_the_ID() );
+        $final_html = ob_get_clean(); // Get the generated HTML
         
-        // Security is paramount. We use wp_kses_post to allow a wide range of
-        // HTML tags and attributes, just like in WordPress post content,
-        // while sanitizing against any potential security vulnerabilities.
-        echo wp_kses_post( $processed_content );
+        // Store the generated HTML in cache if enabled
+        if ( $cache_manager->is_enabled() && isset($cache_key) ) {
+            $cache_manager->set( $cache_key, $final_html );
+        }
+
+        echo $final_html; // Output the final HTML
     }
 }
