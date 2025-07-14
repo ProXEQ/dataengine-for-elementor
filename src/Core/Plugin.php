@@ -57,10 +57,12 @@ final class Plugin {
         if ( is_admin() ) {
             new \DataEngine\Core\Settings_Page();
         }
-        
+
+        add_action( 'wp_ajax_data_engine_get_data_dictionary', [ $this, 'admin_ajax_get_data_dictionary' ] );
+    
         add_action( 'elementor/elements/categories_registered', [ $this, 'register_widget_category' ] );
         add_action( 'elementor/widgets/register', [ $this, 'register_widgets' ] );
-    
+        add_action( 'elementor/editor/after_enqueue_scripts', [ $this, 'enqueue_editor_scripts' ] );
     }
 
     /**
@@ -107,5 +109,81 @@ final class Plugin {
         // For now, we clear all caches. This is the safest approach.
         // A more granular approach could be developed later if needed.
         $this->cache_manager->clear_all();
+    }
+
+    // !EDYTOR
+
+    public function enqueue_editor_scripts(): void {
+        $script_handle = 'data-engine-editor';
+        wp_enqueue_style(
+            'data-engine-editor-styles',
+            plugin_dir_url( DATA_ENGINE_FILE ) . 'assets/css/editor.css',
+            [],
+            DATA_ENGINE_VERSION
+        );
+        wp_enqueue_style(
+            'data-engine-live-editor',
+            plugin_dir_url( DATA_ENGINE_FILE ) . 'assets/css/live-editor.css',
+            [],
+            DATA_ENGINE_VERSION
+        );
+        wp_enqueue_script(
+            $script_handle,
+            plugin_dir_url( DATA_ENGINE_FILE ) . 'assets/js/editor.bundle.js',
+            ['jquery'],
+            DATA_ENGINE_VERSION,
+            true
+        );
+
+        // --- AKTUALIZACJA: Ponownie dodajemy nonce dla naszego nowego punktu AJAX ---
+        wp_localize_script(
+            $script_handle,
+            'DataEngineEditorConfig',
+            [
+                'ajax_url' => admin_url( 'admin-ajax.php' ),
+                'nonce'    => wp_create_nonce( 'data-engine-editor-nonce' ),
+            ]
+        );
+    }
+
+    public function admin_ajax_get_data_dictionary(): void {
+        check_ajax_referer('data-engine-editor-nonce', 'nonce');
+        $post_id = !empty($_POST['preview_id']) ? absint($_POST['preview_id']) : (!empty($_POST['post_id']) ? absint($_POST['post_id']) : 0);
+        if (!$post_id) { wp_send_json_error(['message' => 'Could not determine context.']); }
+
+        $dictionary = ['post' => [ /* ... (bez zmian) ... */ ], 'acf' => []];
+        $fields = get_field_objects($post_id, false, false);
+
+        if ($fields) {
+            foreach ($fields as $field) {
+                $field_data = ['name' => $field['name'], 'label' => $field['label'], 'type' => $field['type'], 'properties' => [['name' => 'label', 'label' => 'Field Label']]];
+                
+                // --- KLUCZOWA POPRAWKA DLA TAXONOMII ---
+                if ($field['type'] === 'taxonomy') {
+                    $field_data['properties'] = array_merge($field_data['properties'], [
+                        ['name' => 'term_id', 'label' => 'Term ID'],
+                        ['name' => 'name', 'label' => 'Term Name'],
+                        ['name' => 'slug', 'label' => 'Term Slug'],
+                        ['name' => 'taxonomy', 'label' => 'Taxonomy Name'],
+                    ]);
+                } elseif (in_array($field['type'], ['image', 'file'])) {
+                    $field_data['properties'] = array_merge($field_data['properties'], [
+                        ['name' => 'url', 'label' => 'URL'], ['name' => 'alt', 'label' => 'Alt Text'],
+                    ]);
+                } elseif (in_array($field['type'], ['post_object', 'page_link'])) {
+                    $field_data['properties'] = array_merge($field_data['properties'], [
+                        ['name' => 'ID', 'label' => 'Post ID'], ['name' => 'post_title', 'label' => 'Post Title'], ['name' => 'permalink', 'label' => 'Permalink']
+                    ]);
+                } elseif ($field['type'] === 'user') {
+                     $field_data['properties'] = array_merge($field_data['properties'], [
+                        ['name' => 'ID', 'label' => 'User ID'], ['name' => 'display_name', 'label' => 'Display Name'], ['name' => 'user_email', 'label' => 'User Email']
+                    ]);
+                }
+                
+                $dictionary['acf'][] = $field_data;
+            }
+        }
+
+        wp_send_json_success($dictionary);
     }
 }

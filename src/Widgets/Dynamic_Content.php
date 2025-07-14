@@ -75,12 +75,20 @@ class Dynamic_Content extends Widget_Base {
                 'label' => esc_html__( 'HTML & Data Template', 'data-engine-for-elementor' ),
                 'type' => Controls_Manager::TEXTAREA,
                 'rows' => 15,
-                'default' => '<h3>%post:post_title%</h3>
-<p>
-  <strong>Custom Field Value:</strong> %acf:my_custom_field%
-</p>',
+                'default' => '<h3>%post:post_title%</h3><p><strong>Custom Field Value:</strong> %acf:my_custom_field%</p>',
                 'description' => esc_html__( 'Use tags like %post:post_title% or %acf:field_name%. HTML is allowed.', 'data-engine-for-elementor' ),
-                'placeholder' => '<h3>%post:post_title%</h3>',
+                'placeholder' => '<h3>%post:post_title%</h3>'
+            ]
+        );
+        
+        // --- OTO BRAKUJĄCY PRZYCISK ---
+        $this->add_control(
+            'launch_live_editor_content',
+            [
+                'type' => Controls_Manager::BUTTON,
+                'text' => __( 'Launch Live Editor', 'data-engine-for-elementor' ),
+                'event' => 'data-engine:launch-editor', // Niestandardowe zdarzenie, na które nasłuchuje nasz JS
+                'separator' => 'before',
             ]
         );
 

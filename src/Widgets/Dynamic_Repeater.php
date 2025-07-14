@@ -61,8 +61,18 @@ class Dynamic_Repeater extends Widget_Base
             'type' => Controls_Manager::TEXTAREA,
             'rows' => 10,
             'description' => __('Use %sub:field_name% to display sub-field values. All DataEngine features are available.', 'data-engine-for-elementor'),
-            'placeholder' => '<li>%sub:title% - %sub:description%</li>',
+            'placeholder' => '<li>%sub:title% - %sub:description%</li>'
         ]);
+
+        $this->add_control(
+            'launch_live_editor_repeater',
+            [
+                'type' => Controls_Manager::BUTTON,
+                'text' => __( 'Launch Live Editor', 'data-engine-for-elementor' ),
+                'event' => 'data-engine:launch-editor', 
+                'separator' => 'before',
+            ]
+        );
 
         $this->add_control('footer_template', [
             'label' => __('Footer Template', 'data-engine-for-elementor'),

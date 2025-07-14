@@ -1,0 +1,97 @@
+/*
+ * DataEngine Live Editor - Modal Styles
+ */
+
+.data-engine-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 99998; /* Just below the modal itself */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.data-engine-overlay.is-visible {
+    opacity: 1;
+}
+
+.data-engine-loader,
+.data-engine-success {
+    color: #fff;
+    text-align: center;
+    font-size: 16px;
+}
+/* Prosta animacja spinnera w CSS */
+.data-engine-loader .spinner {
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 4px solid #fff;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px auto;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.data-engine-success .icon-checkmark {
+    /* Tutaj można użyć SVG lub ikony fontowej */
+    color: #4CAF50;
+    font-size: 50px;
+    line-height: 1;
+}
+
+.data-engine-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 900px;
+    height: 80vh;
+    background: #202124; /* Ciemne tło */
+    z-index: 99999;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.data-engine-modal .modal-header {
+    padding: 15px 20px;
+    background: #2c2d30;
+    color: #e0e0e0;
+    font-weight: bold;
+    border-bottom: 1px solid #444;
+}
+
+.data-engine-modal .modal-content {
+    flex-grow: 1;
+    position: relative; /* Ważne dla CodeMirror */
+}
+/* Upewniamy się, że CodeMirror wypełnia całą dostępną przestrzeń */
+.data-engine-modal .modal-content .cm-editor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 100%;
+    font-size: 14px;
+}
+
+.data-engine-modal .modal-footer {
+    padding: 15px 20px;
+    background: #2c2d30;
+    text-align: right;
+    border-top: 1px solid #444;
+}

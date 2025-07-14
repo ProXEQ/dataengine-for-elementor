@@ -1,0 +1,16 @@
+/*
+ * Custom styles for the DataEngine Live Editor (CodeMirror 6)
+ */
+
+/* Main editor container */
+.cm-editor {
+    border: 1px solid #495157; /* A standard Elementor dark mode border color */
+    border-radius: 3px; /* Match Elementor's border-radius */
+    font-size: 13px; /* Match Elementor's UI font size */
+    outline: none !important; /* Remove the default browser outline on focus */
+}
+
+/* Focused state */
+.cm-editor.cm-focused {
+    border-color: #a4afb7; /* A lighter border color on focus */
+}
