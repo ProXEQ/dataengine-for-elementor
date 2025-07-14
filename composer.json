@@ -1,0 +1,19 @@
+{
+    "name": "pixelmobs/data-engine-for-elementor",
+    "description": "A developer-focused data engine to bridge Elementor with advanced custom fields.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Piotr from PixelMobs",
+            "homepage": "https://pixelmobs.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "DataEngine\\": "src/"
+        }
+    }
+}
