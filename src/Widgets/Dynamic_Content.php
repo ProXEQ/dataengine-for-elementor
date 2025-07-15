@@ -95,6 +95,26 @@ class Dynamic_Content extends Widget_Base {
         $this->end_controls_section();
     }
 
+    public function add_svg_support_for_kses( $allowed_tags ) {
+        $allowed_tags['svg'] = [
+            'xmlns'   => true,
+            'width'   => true,
+            'height'  => true,
+            'viewbox' => true, // Note: 'viewBox' is case-sensitive in SVGs
+            'class'   => true,
+            'fill'    => true,
+        ];
+        $allowed_tags['path'] = [
+            'd'    => true,
+            'fill' => true,
+        ];
+        $allowed_tags['g'] = [
+            'fill' => true,
+        ];
+        // You can add more SVG elements like 'rect', 'circle' if needed
+        return $allowed_tags;
+    }
+
     /**
      * Render the widget's output on the frontend.
      *
@@ -122,6 +142,7 @@ class Dynamic_Content extends Widget_Base {
         
         $settings = $this->get_settings_for_display();
         $raw_content = $settings['template'];
+        add_filter('wp_kses_allowed_html', [ $this, 'add_svg_support_for_kses' ]);
         
         if ( ! empty( $raw_content ) ) {
             $processed_content = $this->get_parser()->process( $raw_content, get_the_ID() );
@@ -136,5 +157,6 @@ class Dynamic_Content extends Widget_Base {
         }
 
         echo $final_html; // Output the final HTML
+        remove_filter('wp_kses_allowed_html', [ $this, 'add_svg_support_for_kses' ] );
     }
 }

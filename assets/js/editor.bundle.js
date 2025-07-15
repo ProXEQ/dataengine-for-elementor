@@ -2461,14 +2461,14 @@
       };
   }
   function resolveTransactionInner(state, spec, docSize) {
-      let sel = spec.selection, annotations = asArray(spec.annotations);
+      let sel = spec.selection, annotations = asArray$1(spec.annotations);
       if (spec.userEvent)
           annotations = annotations.concat(Transaction.userEvent.of(spec.userEvent));
       return {
           changes: spec.changes instanceof ChangeSet ? spec.changes
               : ChangeSet.of(spec.changes || [], docSize, state.facet(lineSeparator)),
           selection: sel && (sel instanceof EditorSelection ? sel : EditorSelection.single(sel.anchor, sel.head)),
-          effects: asArray(spec.effects),
+          effects: asArray$1(spec.effects),
           annotations,
           scrollIntoView: !!spec.scrollIntoView
       };
@@ -2522,7 +2522,7 @@
           else if (Array.isArray(filtered) && filtered.length == 1 && filtered[0] instanceof Transaction)
               tr = filtered[0];
           else
-              tr = resolveTransaction(state, asArray(filtered), false);
+              tr = resolveTransaction(state, asArray$1(filtered), false);
       }
       return tr;
   }
@@ -2536,7 +2536,7 @@
       return spec == tr ? tr : Transaction.create(state, tr.changes, tr.selection, spec.effects, spec.annotations, spec.scrollIntoView);
   }
   const none$1 = [];
-  function asArray(value) {
+  function asArray$1(value) {
       return value == null ? none$1 : Array.isArray(value) ? value : [value];
   }
 
@@ -2677,7 +2677,7 @@
               }
               else if (effect.is(StateEffect.appendConfig)) {
                   conf = null;
-                  base = asArray(base).concat(effect.value);
+                  base = asArray$1(base).concat(effect.value);
               }
           }
           let startValues;
@@ -2717,7 +2717,7 @@
           let sel = this.selection;
           let result1 = f(sel.ranges[0]);
           let changes = this.changes(result1.changes), ranges = [result1.range];
-          let effects = asArray(result1.effects);
+          let effects = asArray$1(result1.effects);
           for (let i = 1; i < sel.ranges.length; i++) {
               let result = f(sel.ranges[i]);
               let newChanges = this.changes(result.changes), newMapped = newChanges.map(changes);
@@ -2726,7 +2726,7 @@
               let mapBy = changes.mapDesc(newChanges, true);
               ranges.push(result.range.map(mapBy));
               changes = changes.compose(newMapped);
-              effects = StateEffect.mapEffects(effects, newMapped).concat(StateEffect.mapEffects(asArray(result.effects), mapBy));
+              effects = StateEffect.mapEffects(effects, newMapped).concat(StateEffect.mapEffects(asArray$1(result.effects), mapBy));
           }
           return {
               changes,
@@ -4251,6 +4251,34 @@
     if (name == "Right") name = "ArrowRight";
     if (name == "Down") name = "ArrowDown";
     return name
+  }
+
+  function crelt() {
+    var elt = arguments[0];
+    if (typeof elt == "string") elt = document.createElement(elt);
+    var i = 1, next = arguments[1];
+    if (next && typeof next == "object" && next.nodeType == null && !Array.isArray(next)) {
+      for (var name in next) if (Object.prototype.hasOwnProperty.call(next, name)) {
+        var value = next[name];
+        if (typeof value == "string") elt.setAttribute(name, value);
+        else if (value != null) elt[name] = value;
+      }
+      i++;
+    }
+    for (; i < arguments.length; i++) add(elt, arguments[i]);
+    return elt
+  }
+
+  function add(elt, child) {
+    if (typeof child == "string") {
+      elt.appendChild(document.createTextNode(child));
+    } else if (child == null) ; else if (child.nodeType != null) {
+      elt.appendChild(child);
+    } else if (Array.isArray(child)) {
+      for (var i = 0; i < child.length; i++) add(elt, child[i]);
+    } else {
+      throw new RangeError("Unsupported child node: " + child)
+    }
   }
 
   function getSelection(root) {
@@ -6614,7 +6642,7 @@
   const mouseSelectionStyle = /*@__PURE__*/Facet.define();
   const exceptionSink = /*@__PURE__*/Facet.define();
   const updateListener = /*@__PURE__*/Facet.define();
-  const inputHandler = /*@__PURE__*/Facet.define();
+  const inputHandler$1 = /*@__PURE__*/Facet.define();
   const focusChangeEffect = /*@__PURE__*/Facet.define();
   const clipboardInputFilter = /*@__PURE__*/Facet.define();
   const clipboardOutputFilter = /*@__PURE__*/Facet.define();
@@ -8318,7 +8346,7 @@
           view.inputState.composing++;
       let defaultTr;
       let defaultInsert = () => defaultTr || (defaultTr = applyDefaultInsert(view, change, newSel));
-      if (!view.state.facet(inputHandler).some(h => h(view, change.from, change.to, text, defaultInsert)))
+      if (!view.state.facet(inputHandler$1).some(h => h(view, change.from, change.to, text, defaultInsert)))
           view.dispatch(defaultInsert());
       return true;
   }
@@ -10710,7 +10738,7 @@
           }
       });
   }
-  const baseTheme$1 = /*@__PURE__*/buildTheme("." + baseThemeID, {
+  const baseTheme$1$1 = /*@__PURE__*/buildTheme("." + baseThemeID, {
       "&": {
           position: "relative !important",
           boxSizing: "border-box",
@@ -12181,7 +12209,7 @@
       mountStyles() {
           this.styleModules = this.state.facet(styleModule);
           let nonce = this.state.facet(EditorView.cspNonce);
-          StyleModule.mount(this.root, this.styleModules.concat(baseTheme$1).reverse(), nonce ? { nonce } : undefined);
+          StyleModule.mount(this.root, this.styleModules.concat(baseTheme$1$1).reverse(), nonce ? { nonce } : undefined);
       }
       readMeasured() {
           if (this.updateState == 2 /* UpdateState.Updating */)
@@ -12660,7 +12688,7 @@
   that would be applied for this input. This can be useful when
   dispatching the custom behavior as a separate transaction.
   */
-  EditorView.inputHandler = inputHandler;
+  EditorView.inputHandler = inputHandler$1;
   /**
   Functions provided in this facet will be used to transform text
   pasted or dropped into the editor.
@@ -13461,6 +13489,282 @@
   const showTooltip = /*@__PURE__*/Facet.define({
       enables: [tooltipPlugin, baseTheme$2]
   });
+  const showHoverTooltip = /*@__PURE__*/Facet.define({
+      combine: inputs => inputs.reduce((a, i) => a.concat(i), [])
+  });
+  class HoverTooltipHost {
+      // Needs to be static so that host tooltip instances always match
+      static create(view) {
+          return new HoverTooltipHost(view);
+      }
+      constructor(view) {
+          this.view = view;
+          this.mounted = false;
+          this.dom = document.createElement("div");
+          this.dom.classList.add("cm-tooltip-hover");
+          this.manager = new TooltipViewManager(view, showHoverTooltip, (t, p) => this.createHostedView(t, p), t => t.dom.remove());
+      }
+      createHostedView(tooltip, prev) {
+          let hostedView = tooltip.create(this.view);
+          hostedView.dom.classList.add("cm-tooltip-section");
+          this.dom.insertBefore(hostedView.dom, prev ? prev.dom.nextSibling : this.dom.firstChild);
+          if (this.mounted && hostedView.mount)
+              hostedView.mount(this.view);
+          return hostedView;
+      }
+      mount(view) {
+          for (let hostedView of this.manager.tooltipViews) {
+              if (hostedView.mount)
+                  hostedView.mount(view);
+          }
+          this.mounted = true;
+      }
+      positioned(space) {
+          for (let hostedView of this.manager.tooltipViews) {
+              if (hostedView.positioned)
+                  hostedView.positioned(space);
+          }
+      }
+      update(update) {
+          this.manager.update(update);
+      }
+      destroy() {
+          var _a;
+          for (let t of this.manager.tooltipViews)
+              (_a = t.destroy) === null || _a === void 0 ? void 0 : _a.call(t);
+      }
+      passProp(name) {
+          let value = undefined;
+          for (let view of this.manager.tooltipViews) {
+              let given = view[name];
+              if (given !== undefined) {
+                  if (value === undefined)
+                      value = given;
+                  else if (value !== given)
+                      return undefined;
+              }
+          }
+          return value;
+      }
+      get offset() { return this.passProp("offset"); }
+      get getCoords() { return this.passProp("getCoords"); }
+      get overlap() { return this.passProp("overlap"); }
+      get resize() { return this.passProp("resize"); }
+  }
+  const showHoverTooltipHost = /*@__PURE__*/showTooltip.compute([showHoverTooltip], state => {
+      let tooltips = state.facet(showHoverTooltip);
+      if (tooltips.length === 0)
+          return null;
+      return {
+          pos: Math.min(...tooltips.map(t => t.pos)),
+          end: Math.max(...tooltips.map(t => { var _a; return (_a = t.end) !== null && _a !== void 0 ? _a : t.pos; })),
+          create: HoverTooltipHost.create,
+          above: tooltips[0].above,
+          arrow: tooltips.some(t => t.arrow),
+      };
+  });
+  class HoverPlugin {
+      constructor(view, source, field, setHover, hoverTime) {
+          this.view = view;
+          this.source = source;
+          this.field = field;
+          this.setHover = setHover;
+          this.hoverTime = hoverTime;
+          this.hoverTimeout = -1;
+          this.restartTimeout = -1;
+          this.pending = null;
+          this.lastMove = { x: 0, y: 0, target: view.dom, time: 0 };
+          this.checkHover = this.checkHover.bind(this);
+          view.dom.addEventListener("mouseleave", this.mouseleave = this.mouseleave.bind(this));
+          view.dom.addEventListener("mousemove", this.mousemove = this.mousemove.bind(this));
+      }
+      update() {
+          if (this.pending) {
+              this.pending = null;
+              clearTimeout(this.restartTimeout);
+              this.restartTimeout = setTimeout(() => this.startHover(), 20);
+          }
+      }
+      get active() {
+          return this.view.state.field(this.field);
+      }
+      checkHover() {
+          this.hoverTimeout = -1;
+          if (this.active.length)
+              return;
+          let hovered = Date.now() - this.lastMove.time;
+          if (hovered < this.hoverTime)
+              this.hoverTimeout = setTimeout(this.checkHover, this.hoverTime - hovered);
+          else
+              this.startHover();
+      }
+      startHover() {
+          clearTimeout(this.restartTimeout);
+          let { view, lastMove } = this;
+          let desc = view.docView.nearest(lastMove.target);
+          if (!desc)
+              return;
+          let pos, side = 1;
+          if (desc instanceof WidgetView) {
+              pos = desc.posAtStart;
+          }
+          else {
+              pos = view.posAtCoords(lastMove);
+              if (pos == null)
+                  return;
+              let posCoords = view.coordsAtPos(pos);
+              if (!posCoords ||
+                  lastMove.y < posCoords.top || lastMove.y > posCoords.bottom ||
+                  lastMove.x < posCoords.left - view.defaultCharacterWidth ||
+                  lastMove.x > posCoords.right + view.defaultCharacterWidth)
+                  return;
+              let bidi = view.bidiSpans(view.state.doc.lineAt(pos)).find(s => s.from <= pos && s.to >= pos);
+              let rtl = bidi && bidi.dir == Direction.RTL ? -1 : 1;
+              side = (lastMove.x < posCoords.left ? -rtl : rtl);
+          }
+          let open = this.source(view, pos, side);
+          if (open === null || open === void 0 ? void 0 : open.then) {
+              let pending = this.pending = { pos };
+              open.then(result => {
+                  if (this.pending == pending) {
+                      this.pending = null;
+                      if (result && !(Array.isArray(result) && !result.length))
+                          view.dispatch({ effects: this.setHover.of(Array.isArray(result) ? result : [result]) });
+                  }
+              }, e => logException(view.state, e, "hover tooltip"));
+          }
+          else if (open && !(Array.isArray(open) && !open.length)) {
+              view.dispatch({ effects: this.setHover.of(Array.isArray(open) ? open : [open]) });
+          }
+      }
+      get tooltip() {
+          let plugin = this.view.plugin(tooltipPlugin);
+          let index = plugin ? plugin.manager.tooltips.findIndex(t => t.create == HoverTooltipHost.create) : -1;
+          return index > -1 ? plugin.manager.tooltipViews[index] : null;
+      }
+      mousemove(event) {
+          var _a, _b;
+          this.lastMove = { x: event.clientX, y: event.clientY, target: event.target, time: Date.now() };
+          if (this.hoverTimeout < 0)
+              this.hoverTimeout = setTimeout(this.checkHover, this.hoverTime);
+          let { active, tooltip } = this;
+          if (active.length && tooltip && !isInTooltip(tooltip.dom, event) || this.pending) {
+              let { pos } = active[0] || this.pending, end = (_b = (_a = active[0]) === null || _a === void 0 ? void 0 : _a.end) !== null && _b !== void 0 ? _b : pos;
+              if ((pos == end ? this.view.posAtCoords(this.lastMove) != pos
+                  : !isOverRange(this.view, pos, end, event.clientX, event.clientY))) {
+                  this.view.dispatch({ effects: this.setHover.of([]) });
+                  this.pending = null;
+              }
+          }
+      }
+      mouseleave(event) {
+          clearTimeout(this.hoverTimeout);
+          this.hoverTimeout = -1;
+          let { active } = this;
+          if (active.length) {
+              let { tooltip } = this;
+              let inTooltip = tooltip && tooltip.dom.contains(event.relatedTarget);
+              if (!inTooltip)
+                  this.view.dispatch({ effects: this.setHover.of([]) });
+              else
+                  this.watchTooltipLeave(tooltip.dom);
+          }
+      }
+      watchTooltipLeave(tooltip) {
+          let watch = (event) => {
+              tooltip.removeEventListener("mouseleave", watch);
+              if (this.active.length && !this.view.dom.contains(event.relatedTarget))
+                  this.view.dispatch({ effects: this.setHover.of([]) });
+          };
+          tooltip.addEventListener("mouseleave", watch);
+      }
+      destroy() {
+          clearTimeout(this.hoverTimeout);
+          this.view.dom.removeEventListener("mouseleave", this.mouseleave);
+          this.view.dom.removeEventListener("mousemove", this.mousemove);
+      }
+  }
+  const tooltipMargin = 4;
+  function isInTooltip(tooltip, event) {
+      let { left, right, top, bottom } = tooltip.getBoundingClientRect(), arrow;
+      if (arrow = tooltip.querySelector(".cm-tooltip-arrow")) {
+          let arrowRect = arrow.getBoundingClientRect();
+          top = Math.min(arrowRect.top, top);
+          bottom = Math.max(arrowRect.bottom, bottom);
+      }
+      return event.clientX >= left - tooltipMargin && event.clientX <= right + tooltipMargin &&
+          event.clientY >= top - tooltipMargin && event.clientY <= bottom + tooltipMargin;
+  }
+  function isOverRange(view, from, to, x, y, margin) {
+      let rect = view.scrollDOM.getBoundingClientRect();
+      let docBottom = view.documentTop + view.documentPadding.top + view.contentHeight;
+      if (rect.left > x || rect.right < x || rect.top > y || Math.min(rect.bottom, docBottom) < y)
+          return false;
+      let pos = view.posAtCoords({ x, y }, false);
+      return pos >= from && pos <= to;
+  }
+  /**
+  Set up a hover tooltip, which shows up when the pointer hovers
+  over ranges of text. The callback is called when the mouse hovers
+  over the document text. It should, if there is a tooltip
+  associated with position `pos`, return the tooltip description
+  (either directly or in a promise). The `side` argument indicates
+  on which side of the position the pointer is—it will be -1 if the
+  pointer is before the position, 1 if after the position.
+
+  Note that all hover tooltips are hosted within a single tooltip
+  container element. This allows multiple tooltips over the same
+  range to be "merged" together without overlapping.
+
+  The return value is a valid [editor extension](https://codemirror.net/6/docs/ref/#state.Extension)
+  but also provides an `active` property holding a state field that
+  can be used to read the currently active tooltips produced by this
+  extension.
+  */
+  function hoverTooltip(source, options = {}) {
+      let setHover = StateEffect.define();
+      let hoverState = StateField.define({
+          create() { return []; },
+          update(value, tr) {
+              if (value.length) {
+                  if (options.hideOnChange && (tr.docChanged || tr.selection))
+                      value = [];
+                  else if (options.hideOn)
+                      value = value.filter(v => !options.hideOn(tr, v));
+                  if (tr.docChanged) {
+                      let mapped = [];
+                      for (let tooltip of value) {
+                          let newPos = tr.changes.mapPos(tooltip.pos, -1, MapMode.TrackDel);
+                          if (newPos != null) {
+                              let copy = Object.assign(Object.create(null), tooltip);
+                              copy.pos = newPos;
+                              if (copy.end != null)
+                                  copy.end = tr.changes.mapPos(copy.end);
+                              mapped.push(copy);
+                          }
+                      }
+                      value = mapped;
+                  }
+              }
+              for (let effect of tr.effects) {
+                  if (effect.is(setHover))
+                      value = effect.value;
+                  if (effect.is(closeHoverTooltipEffect))
+                      value = [];
+              }
+              return value;
+          },
+          provide: f => showHoverTooltip.from(f)
+      });
+      return {
+          active: hoverState,
+          extension: [
+              hoverState,
+              ViewPlugin.define(view => new HoverPlugin(view, source, hoverState, setHover, options.hoverTime || 300 /* Hover.Time */)),
+              showHoverTooltipHost
+          ]
+      };
+  }
   /**
   Get the active tooltip view for a given tooltip, if available.
   */
@@ -13471,6 +13775,166 @@
       let found = plugin.manager.tooltips.indexOf(tooltip);
       return found < 0 ? null : plugin.manager.tooltipViews[found];
   }
+  const closeHoverTooltipEffect = /*@__PURE__*/StateEffect.define();
+
+  const panelConfig = /*@__PURE__*/Facet.define({
+      combine(configs) {
+          let topContainer, bottomContainer;
+          for (let c of configs) {
+              topContainer = topContainer || c.topContainer;
+              bottomContainer = bottomContainer || c.bottomContainer;
+          }
+          return { topContainer, bottomContainer };
+      }
+  });
+  const panelPlugin = /*@__PURE__*/ViewPlugin.fromClass(class {
+      constructor(view) {
+          this.input = view.state.facet(showPanel);
+          this.specs = this.input.filter(s => s);
+          this.panels = this.specs.map(spec => spec(view));
+          let conf = view.state.facet(panelConfig);
+          this.top = new PanelGroup(view, true, conf.topContainer);
+          this.bottom = new PanelGroup(view, false, conf.bottomContainer);
+          this.top.sync(this.panels.filter(p => p.top));
+          this.bottom.sync(this.panels.filter(p => !p.top));
+          for (let p of this.panels) {
+              p.dom.classList.add("cm-panel");
+              if (p.mount)
+                  p.mount();
+          }
+      }
+      update(update) {
+          let conf = update.state.facet(panelConfig);
+          if (this.top.container != conf.topContainer) {
+              this.top.sync([]);
+              this.top = new PanelGroup(update.view, true, conf.topContainer);
+          }
+          if (this.bottom.container != conf.bottomContainer) {
+              this.bottom.sync([]);
+              this.bottom = new PanelGroup(update.view, false, conf.bottomContainer);
+          }
+          this.top.syncClasses();
+          this.bottom.syncClasses();
+          let input = update.state.facet(showPanel);
+          if (input != this.input) {
+              let specs = input.filter(x => x);
+              let panels = [], top = [], bottom = [], mount = [];
+              for (let spec of specs) {
+                  let known = this.specs.indexOf(spec), panel;
+                  if (known < 0) {
+                      panel = spec(update.view);
+                      mount.push(panel);
+                  }
+                  else {
+                      panel = this.panels[known];
+                      if (panel.update)
+                          panel.update(update);
+                  }
+                  panels.push(panel);
+                  (panel.top ? top : bottom).push(panel);
+              }
+              this.specs = specs;
+              this.panels = panels;
+              this.top.sync(top);
+              this.bottom.sync(bottom);
+              for (let p of mount) {
+                  p.dom.classList.add("cm-panel");
+                  if (p.mount)
+                      p.mount();
+              }
+          }
+          else {
+              for (let p of this.panels)
+                  if (p.update)
+                      p.update(update);
+          }
+      }
+      destroy() {
+          this.top.sync([]);
+          this.bottom.sync([]);
+      }
+  }, {
+      provide: plugin => EditorView.scrollMargins.of(view => {
+          let value = view.plugin(plugin);
+          return value && { top: value.top.scrollMargin(), bottom: value.bottom.scrollMargin() };
+      })
+  });
+  class PanelGroup {
+      constructor(view, top, container) {
+          this.view = view;
+          this.top = top;
+          this.container = container;
+          this.dom = undefined;
+          this.classes = "";
+          this.panels = [];
+          this.syncClasses();
+      }
+      sync(panels) {
+          for (let p of this.panels)
+              if (p.destroy && panels.indexOf(p) < 0)
+                  p.destroy();
+          this.panels = panels;
+          this.syncDOM();
+      }
+      syncDOM() {
+          if (this.panels.length == 0) {
+              if (this.dom) {
+                  this.dom.remove();
+                  this.dom = undefined;
+              }
+              return;
+          }
+          if (!this.dom) {
+              this.dom = document.createElement("div");
+              this.dom.className = this.top ? "cm-panels cm-panels-top" : "cm-panels cm-panels-bottom";
+              this.dom.style[this.top ? "top" : "bottom"] = "0";
+              let parent = this.container || this.view.dom;
+              parent.insertBefore(this.dom, this.top ? parent.firstChild : null);
+          }
+          let curDOM = this.dom.firstChild;
+          for (let panel of this.panels) {
+              if (panel.dom.parentNode == this.dom) {
+                  while (curDOM != panel.dom)
+                      curDOM = rm(curDOM);
+                  curDOM = curDOM.nextSibling;
+              }
+              else {
+                  this.dom.insertBefore(panel.dom, curDOM);
+              }
+          }
+          while (curDOM)
+              curDOM = rm(curDOM);
+      }
+      scrollMargin() {
+          return !this.dom || this.container ? 0
+              : Math.max(0, this.top ?
+                  this.dom.getBoundingClientRect().bottom - Math.max(0, this.view.scrollDOM.getBoundingClientRect().top) :
+                  Math.min(innerHeight, this.view.scrollDOM.getBoundingClientRect().bottom) - this.dom.getBoundingClientRect().top);
+      }
+      syncClasses() {
+          if (!this.container || this.classes == this.view.themeClasses)
+              return;
+          for (let cls of this.classes.split(" "))
+              if (cls)
+                  this.container.classList.remove(cls);
+          for (let cls of (this.classes = this.view.themeClasses).split(" "))
+              if (cls)
+                  this.container.classList.add(cls);
+      }
+  }
+  function rm(node) {
+      let next = node.nextSibling;
+      node.remove();
+      return next;
+  }
+  /**
+  Opening a panel is done by providing a constructor function for
+  the panel through this facet. (The panel is closed again when its
+  constructor is no longer provided.) Values of `null` are ignored.
+  */
+  const showPanel = /*@__PURE__*/Facet.define({
+      enables: panelPlugin
+  });
 
   /**
   A gutter marker represents a bit of information attached to a line
@@ -13499,6 +13963,401 @@
   GutterMarker.prototype.mapMode = MapMode.TrackBefore;
   GutterMarker.prototype.startSide = GutterMarker.prototype.endSide = -1;
   GutterMarker.prototype.point = true;
+  /**
+  Facet used to add a class to all gutter elements for a given line.
+  Markers given to this facet should _only_ define an
+  [`elementclass`](https://codemirror.net/6/docs/ref/#view.GutterMarker.elementClass), not a
+  [`toDOM`](https://codemirror.net/6/docs/ref/#view.GutterMarker.toDOM) (or the marker will appear
+  in all gutters for the line).
+  */
+  const gutterLineClass = /*@__PURE__*/Facet.define();
+  /**
+  Facet used to add a class to all gutter elements next to a widget.
+  Should not provide widgets with a `toDOM` method.
+  */
+  const gutterWidgetClass = /*@__PURE__*/Facet.define();
+  const defaults$1 = {
+      class: "",
+      renderEmptyElements: false,
+      elementStyle: "",
+      markers: () => RangeSet.empty,
+      lineMarker: () => null,
+      widgetMarker: () => null,
+      lineMarkerChange: null,
+      initialSpacer: null,
+      updateSpacer: null,
+      domEventHandlers: {},
+      side: "before"
+  };
+  const activeGutters = /*@__PURE__*/Facet.define();
+  /**
+  Define an editor gutter. The order in which the gutters appear is
+  determined by their extension priority.
+  */
+  function gutter(config) {
+      return [gutters(), activeGutters.of({ ...defaults$1, ...config })];
+  }
+  const unfixGutters = /*@__PURE__*/Facet.define({
+      combine: values => values.some(x => x)
+  });
+  /**
+  The gutter-drawing plugin is automatically enabled when you add a
+  gutter, but you can use this function to explicitly configure it.
+
+  Unless `fixed` is explicitly set to `false`, the gutters are
+  fixed, meaning they don't scroll along with the content
+  horizontally (except on Internet Explorer, which doesn't support
+  CSS [`position:
+  sticky`](https://developer.mozilla.org/en-US/docs/Web/CSS/position#sticky)).
+  */
+  function gutters(config) {
+      let result = [
+          gutterView,
+      ];
+      return result;
+  }
+  const gutterView = /*@__PURE__*/ViewPlugin.fromClass(class {
+      constructor(view) {
+          this.view = view;
+          this.domAfter = null;
+          this.prevViewport = view.viewport;
+          this.dom = document.createElement("div");
+          this.dom.className = "cm-gutters cm-gutters-before";
+          this.dom.setAttribute("aria-hidden", "true");
+          this.dom.style.minHeight = (this.view.contentHeight / this.view.scaleY) + "px";
+          this.gutters = view.state.facet(activeGutters).map(conf => new SingleGutterView(view, conf));
+          this.fixed = !view.state.facet(unfixGutters);
+          for (let gutter of this.gutters) {
+              if (gutter.config.side == "after")
+                  this.getDOMAfter().appendChild(gutter.dom);
+              else
+                  this.dom.appendChild(gutter.dom);
+          }
+          if (this.fixed) {
+              // FIXME IE11 fallback, which doesn't support position: sticky,
+              // by using position: relative + event handlers that realign the
+              // gutter (or just force fixed=false on IE11?)
+              this.dom.style.position = "sticky";
+          }
+          this.syncGutters(false);
+          view.scrollDOM.insertBefore(this.dom, view.contentDOM);
+      }
+      getDOMAfter() {
+          if (!this.domAfter) {
+              this.domAfter = document.createElement("div");
+              this.domAfter.className = "cm-gutters cm-gutters-after";
+              this.domAfter.setAttribute("aria-hidden", "true");
+              this.domAfter.style.minHeight = (this.view.contentHeight / this.view.scaleY) + "px";
+              this.domAfter.style.position = this.fixed ? "sticky" : "";
+              this.view.scrollDOM.appendChild(this.domAfter);
+          }
+          return this.domAfter;
+      }
+      update(update) {
+          if (this.updateGutters(update)) {
+              // Detach during sync when the viewport changed significantly
+              // (such as during scrolling), since for large updates that is
+              // faster.
+              let vpA = this.prevViewport, vpB = update.view.viewport;
+              let vpOverlap = Math.min(vpA.to, vpB.to) - Math.max(vpA.from, vpB.from);
+              this.syncGutters(vpOverlap < (vpB.to - vpB.from) * 0.8);
+          }
+          if (update.geometryChanged) {
+              let min = (this.view.contentHeight / this.view.scaleY) + "px";
+              this.dom.style.minHeight = min;
+              if (this.domAfter)
+                  this.domAfter.style.minHeight = min;
+          }
+          if (this.view.state.facet(unfixGutters) != !this.fixed) {
+              this.fixed = !this.fixed;
+              this.dom.style.position = this.fixed ? "sticky" : "";
+              if (this.domAfter)
+                  this.domAfter.style.position = this.fixed ? "sticky" : "";
+          }
+          this.prevViewport = update.view.viewport;
+      }
+      syncGutters(detach) {
+          let after = this.dom.nextSibling;
+          if (detach) {
+              this.dom.remove();
+              if (this.domAfter)
+                  this.domAfter.remove();
+          }
+          let lineClasses = RangeSet.iter(this.view.state.facet(gutterLineClass), this.view.viewport.from);
+          let classSet = [];
+          let contexts = this.gutters.map(gutter => new UpdateContext(gutter, this.view.viewport, -this.view.documentPadding.top));
+          for (let line of this.view.viewportLineBlocks) {
+              if (classSet.length)
+                  classSet = [];
+              if (Array.isArray(line.type)) {
+                  let first = true;
+                  for (let b of line.type) {
+                      if (b.type == BlockType.Text && first) {
+                          advanceCursor(lineClasses, classSet, b.from);
+                          for (let cx of contexts)
+                              cx.line(this.view, b, classSet);
+                          first = false;
+                      }
+                      else if (b.widget) {
+                          for (let cx of contexts)
+                              cx.widget(this.view, b);
+                      }
+                  }
+              }
+              else if (line.type == BlockType.Text) {
+                  advanceCursor(lineClasses, classSet, line.from);
+                  for (let cx of contexts)
+                      cx.line(this.view, line, classSet);
+              }
+              else if (line.widget) {
+                  for (let cx of contexts)
+                      cx.widget(this.view, line);
+              }
+          }
+          for (let cx of contexts)
+              cx.finish();
+          if (detach) {
+              this.view.scrollDOM.insertBefore(this.dom, after);
+              if (this.domAfter)
+                  this.view.scrollDOM.appendChild(this.domAfter);
+          }
+      }
+      updateGutters(update) {
+          let prev = update.startState.facet(activeGutters), cur = update.state.facet(activeGutters);
+          let change = update.docChanged || update.heightChanged || update.viewportChanged ||
+              !RangeSet.eq(update.startState.facet(gutterLineClass), update.state.facet(gutterLineClass), update.view.viewport.from, update.view.viewport.to);
+          if (prev == cur) {
+              for (let gutter of this.gutters)
+                  if (gutter.update(update))
+                      change = true;
+          }
+          else {
+              change = true;
+              let gutters = [];
+              for (let conf of cur) {
+                  let known = prev.indexOf(conf);
+                  if (known < 0) {
+                      gutters.push(new SingleGutterView(this.view, conf));
+                  }
+                  else {
+                      this.gutters[known].update(update);
+                      gutters.push(this.gutters[known]);
+                  }
+              }
+              for (let g of this.gutters) {
+                  g.dom.remove();
+                  if (gutters.indexOf(g) < 0)
+                      g.destroy();
+              }
+              for (let g of gutters) {
+                  if (g.config.side == "after")
+                      this.getDOMAfter().appendChild(g.dom);
+                  else
+                      this.dom.appendChild(g.dom);
+              }
+              this.gutters = gutters;
+          }
+          return change;
+      }
+      destroy() {
+          for (let view of this.gutters)
+              view.destroy();
+          this.dom.remove();
+          if (this.domAfter)
+              this.domAfter.remove();
+      }
+  }, {
+      provide: plugin => EditorView.scrollMargins.of(view => {
+          let value = view.plugin(plugin);
+          if (!value || value.gutters.length == 0 || !value.fixed)
+              return null;
+          let before = value.dom.offsetWidth * view.scaleX, after = value.domAfter ? value.domAfter.offsetWidth * view.scaleX : 0;
+          return view.textDirection == Direction.LTR
+              ? { left: before, right: after }
+              : { right: before, left: after };
+      })
+  });
+  function asArray(val) { return (Array.isArray(val) ? val : [val]); }
+  function advanceCursor(cursor, collect, pos) {
+      while (cursor.value && cursor.from <= pos) {
+          if (cursor.from == pos)
+              collect.push(cursor.value);
+          cursor.next();
+      }
+  }
+  class UpdateContext {
+      constructor(gutter, viewport, height) {
+          this.gutter = gutter;
+          this.height = height;
+          this.i = 0;
+          this.cursor = RangeSet.iter(gutter.markers, viewport.from);
+      }
+      addElement(view, block, markers) {
+          let { gutter } = this, above = (block.top - this.height) / view.scaleY, height = block.height / view.scaleY;
+          if (this.i == gutter.elements.length) {
+              let newElt = new GutterElement(view, height, above, markers);
+              gutter.elements.push(newElt);
+              gutter.dom.appendChild(newElt.dom);
+          }
+          else {
+              gutter.elements[this.i].update(view, height, above, markers);
+          }
+          this.height = block.bottom;
+          this.i++;
+      }
+      line(view, line, extraMarkers) {
+          let localMarkers = [];
+          advanceCursor(this.cursor, localMarkers, line.from);
+          if (extraMarkers.length)
+              localMarkers = localMarkers.concat(extraMarkers);
+          let forLine = this.gutter.config.lineMarker(view, line, localMarkers);
+          if (forLine)
+              localMarkers.unshift(forLine);
+          let gutter = this.gutter;
+          if (localMarkers.length == 0 && !gutter.config.renderEmptyElements)
+              return;
+          this.addElement(view, line, localMarkers);
+      }
+      widget(view, block) {
+          let marker = this.gutter.config.widgetMarker(view, block.widget, block), markers = marker ? [marker] : null;
+          for (let cls of view.state.facet(gutterWidgetClass)) {
+              let marker = cls(view, block.widget, block);
+              if (marker)
+                  (markers || (markers = [])).push(marker);
+          }
+          if (markers)
+              this.addElement(view, block, markers);
+      }
+      finish() {
+          let gutter = this.gutter;
+          while (gutter.elements.length > this.i) {
+              let last = gutter.elements.pop();
+              gutter.dom.removeChild(last.dom);
+              last.destroy();
+          }
+      }
+  }
+  class SingleGutterView {
+      constructor(view, config) {
+          this.view = view;
+          this.config = config;
+          this.elements = [];
+          this.spacer = null;
+          this.dom = document.createElement("div");
+          this.dom.className = "cm-gutter" + (this.config.class ? " " + this.config.class : "");
+          for (let prop in config.domEventHandlers) {
+              this.dom.addEventListener(prop, (event) => {
+                  let target = event.target, y;
+                  if (target != this.dom && this.dom.contains(target)) {
+                      while (target.parentNode != this.dom)
+                          target = target.parentNode;
+                      let rect = target.getBoundingClientRect();
+                      y = (rect.top + rect.bottom) / 2;
+                  }
+                  else {
+                      y = event.clientY;
+                  }
+                  let line = view.lineBlockAtHeight(y - view.documentTop);
+                  if (config.domEventHandlers[prop](view, line, event))
+                      event.preventDefault();
+              });
+          }
+          this.markers = asArray(config.markers(view));
+          if (config.initialSpacer) {
+              this.spacer = new GutterElement(view, 0, 0, [config.initialSpacer(view)]);
+              this.dom.appendChild(this.spacer.dom);
+              this.spacer.dom.style.cssText += "visibility: hidden; pointer-events: none";
+          }
+      }
+      update(update) {
+          let prevMarkers = this.markers;
+          this.markers = asArray(this.config.markers(update.view));
+          if (this.spacer && this.config.updateSpacer) {
+              let updated = this.config.updateSpacer(this.spacer.markers[0], update);
+              if (updated != this.spacer.markers[0])
+                  this.spacer.update(update.view, 0, 0, [updated]);
+          }
+          let vp = update.view.viewport;
+          return !RangeSet.eq(this.markers, prevMarkers, vp.from, vp.to) ||
+              (this.config.lineMarkerChange ? this.config.lineMarkerChange(update) : false);
+      }
+      destroy() {
+          for (let elt of this.elements)
+              elt.destroy();
+      }
+  }
+  class GutterElement {
+      constructor(view, height, above, markers) {
+          this.height = -1;
+          this.above = 0;
+          this.markers = [];
+          this.dom = document.createElement("div");
+          this.dom.className = "cm-gutterElement";
+          this.update(view, height, above, markers);
+      }
+      update(view, height, above, markers) {
+          if (this.height != height) {
+              this.height = height;
+              this.dom.style.height = height + "px";
+          }
+          if (this.above != above)
+              this.dom.style.marginTop = (this.above = above) ? above + "px" : "";
+          if (!sameMarkers(this.markers, markers))
+              this.setMarkers(view, markers);
+      }
+      setMarkers(view, markers) {
+          let cls = "cm-gutterElement", domPos = this.dom.firstChild;
+          for (let iNew = 0, iOld = 0;;) {
+              let skipTo = iOld, marker = iNew < markers.length ? markers[iNew++] : null, matched = false;
+              if (marker) {
+                  let c = marker.elementClass;
+                  if (c)
+                      cls += " " + c;
+                  for (let i = iOld; i < this.markers.length; i++)
+                      if (this.markers[i].compare(marker)) {
+                          skipTo = i;
+                          matched = true;
+                          break;
+                      }
+              }
+              else {
+                  skipTo = this.markers.length;
+              }
+              while (iOld < skipTo) {
+                  let next = this.markers[iOld++];
+                  if (next.toDOM) {
+                      next.destroy(domPos);
+                      let after = domPos.nextSibling;
+                      domPos.remove();
+                      domPos = after;
+                  }
+              }
+              if (!marker)
+                  break;
+              if (marker.toDOM) {
+                  if (matched)
+                      domPos = domPos.nextSibling;
+                  else
+                      this.dom.insertBefore(marker.toDOM(view), domPos);
+              }
+              if (matched)
+                  iOld++;
+          }
+          this.dom.className = cls;
+          this.markers = markers;
+      }
+      destroy() {
+          this.setMarkers(null, []); // First argument not used unless creating markers
+      }
+  }
+  function sameMarkers(a, b) {
+      if (a.length != b.length)
+          return false;
+      for (let i = 0; i < a.length; i++)
+          if (!a[i].compare(b[i]))
+              return false;
+      return true;
+  }
 
   /**
   The default maximum length of a `TreeBuffer` node.
@@ -20294,7 +21153,7 @@
       }
   }));
 
-  const baseTheme = /*@__PURE__*/EditorView.baseTheme({
+  const baseTheme$1 = /*@__PURE__*/EditorView.baseTheme({
       ".cm-tooltip.cm-tooltip-autocomplete": {
           "& > ul": {
               fontFamily: "monospace",
@@ -20596,7 +21455,7 @@
               let active = new ActiveSnippet(ranges, 0);
               let effects = spec.effects = [setActive.of(active)];
               if (editor.state.field(snippetState, false) === undefined)
-                  effects.push(StateEffect.appendConfig.of([snippetState, addSnippetKeymap, snippetPointerHandler, baseTheme]));
+                  effects.push(StateEffect.appendConfig.of([snippetState, addSnippetKeymap, snippetPointerHandler, baseTheme$1]));
           }
           editor.dispatch(editor.state.update(spec));
       };
@@ -20673,10 +21532,216 @@
           return true;
       }
   });
+
+  const defaults = {
+      brackets: ["(", "[", "{", "'", '"'],
+      before: ")]}:;>",
+      stringPrefixes: []
+  };
+  const closeBracketEffect = /*@__PURE__*/StateEffect.define({
+      map(value, mapping) {
+          let mapped = mapping.mapPos(value, -1, MapMode.TrackAfter);
+          return mapped == null ? undefined : mapped;
+      }
+  });
   const closedBracket = /*@__PURE__*/new class extends RangeValue {
   };
   closedBracket.startSide = 1;
   closedBracket.endSide = -1;
+  const bracketState = /*@__PURE__*/StateField.define({
+      create() { return RangeSet.empty; },
+      update(value, tr) {
+          value = value.map(tr.changes);
+          if (tr.selection) {
+              let line = tr.state.doc.lineAt(tr.selection.main.head);
+              value = value.update({ filter: from => from >= line.from && from <= line.to });
+          }
+          for (let effect of tr.effects)
+              if (effect.is(closeBracketEffect))
+                  value = value.update({ add: [closedBracket.range(effect.value, effect.value + 1)] });
+          return value;
+      }
+  });
+  /**
+  Extension to enable bracket-closing behavior. When a closeable
+  bracket is typed, its closing bracket is immediately inserted
+  after the cursor. When closing a bracket directly in front of a
+  closing bracket inserted by the extension, the cursor moves over
+  that bracket.
+  */
+  function closeBrackets() {
+      return [inputHandler, bracketState];
+  }
+  const definedClosing = "()[]{}<>«»»«［］｛｝";
+  function closing(ch) {
+      for (let i = 0; i < definedClosing.length; i += 2)
+          if (definedClosing.charCodeAt(i) == ch)
+              return definedClosing.charAt(i + 1);
+      return fromCodePoint(ch < 128 ? ch : ch + 1);
+  }
+  function config(state, pos) {
+      return state.languageDataAt("closeBrackets", pos)[0] || defaults;
+  }
+  const android$1 = typeof navigator == "object" && /*@__PURE__*//Android\b/.test(navigator.userAgent);
+  const inputHandler = /*@__PURE__*/EditorView.inputHandler.of((view, from, to, insert) => {
+      if ((android$1 ? view.composing : view.compositionStarted) || view.state.readOnly)
+          return false;
+      let sel = view.state.selection.main;
+      if (insert.length > 2 || insert.length == 2 && codePointSize(codePointAt(insert, 0)) == 1 ||
+          from != sel.from || to != sel.to)
+          return false;
+      let tr = insertBracket(view.state, insert);
+      if (!tr)
+          return false;
+      view.dispatch(tr);
+      return true;
+  });
+  /**
+  Implements the extension's behavior on text insertion. If the
+  given string counts as a bracket in the language around the
+  selection, and replacing the selection with it requires custom
+  behavior (inserting a closing version or skipping past a
+  previously-closed bracket), this function returns a transaction
+  representing that custom behavior. (You only need this if you want
+  to programmatically insert brackets—the
+  [`closeBrackets`](https://codemirror.net/6/docs/ref/#autocomplete.closeBrackets) extension will
+  take care of running this for user input.)
+  */
+  function insertBracket(state, bracket) {
+      let conf = config(state, state.selection.main.head);
+      let tokens = conf.brackets || defaults.brackets;
+      for (let tok of tokens) {
+          let closed = closing(codePointAt(tok, 0));
+          if (bracket == tok)
+              return closed == tok ? handleSame(state, tok, tokens.indexOf(tok + tok + tok) > -1, conf)
+                  : handleOpen(state, tok, closed, conf.before || defaults.before);
+          if (bracket == closed && closedBracketAt(state, state.selection.main.from))
+              return handleClose(state, tok, closed);
+      }
+      return null;
+  }
+  function closedBracketAt(state, pos) {
+      let found = false;
+      state.field(bracketState).between(0, state.doc.length, from => {
+          if (from == pos)
+              found = true;
+      });
+      return found;
+  }
+  function nextChar(doc, pos) {
+      let next = doc.sliceString(pos, pos + 2);
+      return next.slice(0, codePointSize(codePointAt(next, 0)));
+  }
+  function handleOpen(state, open, close, closeBefore) {
+      let dont = null, changes = state.changeByRange(range => {
+          if (!range.empty)
+              return { changes: [{ insert: open, from: range.from }, { insert: close, from: range.to }],
+                  effects: closeBracketEffect.of(range.to + open.length),
+                  range: EditorSelection.range(range.anchor + open.length, range.head + open.length) };
+          let next = nextChar(state.doc, range.head);
+          if (!next || /\s/.test(next) || closeBefore.indexOf(next) > -1)
+              return { changes: { insert: open + close, from: range.head },
+                  effects: closeBracketEffect.of(range.head + open.length),
+                  range: EditorSelection.cursor(range.head + open.length) };
+          return { range: dont = range };
+      });
+      return dont ? null : state.update(changes, {
+          scrollIntoView: true,
+          userEvent: "input.type"
+      });
+  }
+  function handleClose(state, _open, close) {
+      let dont = null, changes = state.changeByRange(range => {
+          if (range.empty && nextChar(state.doc, range.head) == close)
+              return { changes: { from: range.head, to: range.head + close.length, insert: close },
+                  range: EditorSelection.cursor(range.head + close.length) };
+          return dont = { range };
+      });
+      return dont ? null : state.update(changes, {
+          scrollIntoView: true,
+          userEvent: "input.type"
+      });
+  }
+  // Handles cases where the open and close token are the same, and
+  // possibly triple quotes (as in `"""abc"""`-style quoting).
+  function handleSame(state, token, allowTriple, config) {
+      let stringPrefixes = config.stringPrefixes || defaults.stringPrefixes;
+      let dont = null, changes = state.changeByRange(range => {
+          if (!range.empty)
+              return { changes: [{ insert: token, from: range.from }, { insert: token, from: range.to }],
+                  effects: closeBracketEffect.of(range.to + token.length),
+                  range: EditorSelection.range(range.anchor + token.length, range.head + token.length) };
+          let pos = range.head, next = nextChar(state.doc, pos), start;
+          if (next == token) {
+              if (nodeStart(state, pos)) {
+                  return { changes: { insert: token + token, from: pos },
+                      effects: closeBracketEffect.of(pos + token.length),
+                      range: EditorSelection.cursor(pos + token.length) };
+              }
+              else if (closedBracketAt(state, pos)) {
+                  let isTriple = allowTriple && state.sliceDoc(pos, pos + token.length * 3) == token + token + token;
+                  let content = isTriple ? token + token + token : token;
+                  return { changes: { from: pos, to: pos + content.length, insert: content },
+                      range: EditorSelection.cursor(pos + content.length) };
+              }
+          }
+          else if (allowTriple && state.sliceDoc(pos - 2 * token.length, pos) == token + token &&
+              (start = canStartStringAt(state, pos - 2 * token.length, stringPrefixes)) > -1 &&
+              nodeStart(state, start)) {
+              return { changes: { insert: token + token + token + token, from: pos },
+                  effects: closeBracketEffect.of(pos + token.length),
+                  range: EditorSelection.cursor(pos + token.length) };
+          }
+          else if (state.charCategorizer(pos)(next) != CharCategory.Word) {
+              if (canStartStringAt(state, pos, stringPrefixes) > -1 && !probablyInString(state, pos, token, stringPrefixes))
+                  return { changes: { insert: token + token, from: pos },
+                      effects: closeBracketEffect.of(pos + token.length),
+                      range: EditorSelection.cursor(pos + token.length) };
+          }
+          return { range: dont = range };
+      });
+      return dont ? null : state.update(changes, {
+          scrollIntoView: true,
+          userEvent: "input.type"
+      });
+  }
+  function nodeStart(state, pos) {
+      let tree = syntaxTree(state).resolveInner(pos + 1);
+      return tree.parent && tree.from == pos;
+  }
+  function probablyInString(state, pos, quoteToken, prefixes) {
+      let node = syntaxTree(state).resolveInner(pos, -1);
+      let maxPrefix = prefixes.reduce((m, p) => Math.max(m, p.length), 0);
+      for (let i = 0; i < 5; i++) {
+          let start = state.sliceDoc(node.from, Math.min(node.to, node.from + quoteToken.length + maxPrefix));
+          let quotePos = start.indexOf(quoteToken);
+          if (!quotePos || quotePos > -1 && prefixes.indexOf(start.slice(0, quotePos)) > -1) {
+              let first = node.firstChild;
+              while (first && first.from == node.from && first.to - first.from > quoteToken.length + quotePos) {
+                  if (state.sliceDoc(first.to - quoteToken.length, first.to) == quoteToken)
+                      return false;
+                  first = first.firstChild;
+              }
+              return true;
+          }
+          let parent = node.to == pos && node.parent;
+          if (!parent)
+              break;
+          node = parent;
+      }
+      return false;
+  }
+  function canStartStringAt(state, pos, prefixes) {
+      let charCat = state.charCategorizer(pos);
+      if (charCat(state.sliceDoc(pos - 1, pos)) != CharCategory.Word)
+          return pos;
+      for (let prefix of prefixes) {
+          let start = pos - prefix.length;
+          if (state.sliceDoc(start, pos) == prefix && charCat(state.sliceDoc(start - 1, start)) != CharCategory.Word)
+              return start;
+      }
+      return -1;
+  }
 
   /**
   Returns an extension that enables autocompletion.
@@ -20688,7 +21753,7 @@
           completionConfig.of(config),
           completionPlugin,
           completionKeymapExt,
-          baseTheme
+          baseTheme$1
       ];
   }
   /**
@@ -24508,15 +25573,836 @@
       return true;
   });
 
+  class SelectedDiagnostic {
+      constructor(from, to, diagnostic) {
+          this.from = from;
+          this.to = to;
+          this.diagnostic = diagnostic;
+      }
+  }
+  class LintState {
+      constructor(diagnostics, panel, selected) {
+          this.diagnostics = diagnostics;
+          this.panel = panel;
+          this.selected = selected;
+      }
+      static init(diagnostics, panel, state) {
+          // Filter the list of diagnostics for which to create markers
+          let diagnosticFilter = state.facet(lintConfig).markerFilter;
+          if (diagnosticFilter)
+              diagnostics = diagnosticFilter(diagnostics, state);
+          let sorted = diagnostics.slice().sort((a, b) => a.from - b.from || a.to - b.to);
+          let deco = new RangeSetBuilder(), active = [], pos = 0;
+          for (let i = 0;;) {
+              let next = i == sorted.length ? null : sorted[i];
+              if (!next && !active.length)
+                  break;
+              let from, to;
+              if (active.length) {
+                  from = pos;
+                  to = active.reduce((p, d) => Math.min(p, d.to), next && next.from > from ? next.from : 1e8);
+              }
+              else {
+                  from = next.from;
+                  to = next.to;
+                  active.push(next);
+                  i++;
+              }
+              while (i < sorted.length) {
+                  let next = sorted[i];
+                  if (next.from == from && (next.to > next.from || next.to == from)) {
+                      active.push(next);
+                      i++;
+                      to = Math.min(next.to, to);
+                  }
+                  else {
+                      to = Math.min(next.from, to);
+                      break;
+                  }
+              }
+              let sev = maxSeverity(active);
+              if (active.some(d => d.from == d.to || (d.from == d.to - 1 && state.doc.lineAt(d.from).to == d.from))) {
+                  deco.add(from, from, Decoration.widget({
+                      widget: new DiagnosticWidget(sev),
+                      diagnostics: active.slice()
+                  }));
+              }
+              else {
+                  let markClass = active.reduce((c, d) => d.markClass ? c + " " + d.markClass : c, "");
+                  deco.add(from, to, Decoration.mark({
+                      class: "cm-lintRange cm-lintRange-" + sev + markClass,
+                      diagnostics: active.slice(),
+                      inclusiveEnd: active.some(a => a.to > to)
+                  }));
+              }
+              pos = to;
+              for (let i = 0; i < active.length; i++)
+                  if (active[i].to <= pos)
+                      active.splice(i--, 1);
+          }
+          let set = deco.finish();
+          return new LintState(set, panel, findDiagnostic(set));
+      }
+  }
+  function findDiagnostic(diagnostics, diagnostic = null, after = 0) {
+      let found = null;
+      diagnostics.between(after, 1e9, (from, to, { spec }) => {
+          if (diagnostic && spec.diagnostics.indexOf(diagnostic) < 0)
+              return;
+          if (!found)
+              found = new SelectedDiagnostic(from, to, diagnostic || spec.diagnostics[0]);
+          else if (spec.diagnostics.indexOf(found.diagnostic) < 0)
+              return false;
+          else
+              found = new SelectedDiagnostic(found.from, to, found.diagnostic);
+      });
+      return found;
+  }
+  function hideTooltip(tr, tooltip) {
+      let from = tooltip.pos, to = tooltip.end || from;
+      let result = tr.state.facet(lintConfig).hideOn(tr, from, to);
+      if (result != null)
+          return result;
+      let line = tr.startState.doc.lineAt(tooltip.pos);
+      return !!(tr.effects.some(e => e.is(setDiagnosticsEffect)) || tr.changes.touchesRange(line.from, Math.max(line.to, to)));
+  }
+  function maybeEnableLint(state, effects) {
+      return state.field(lintState, false) ? effects : effects.concat(StateEffect.appendConfig.of(lintExtensions));
+  }
+  /**
+  Returns a transaction spec which updates the current set of
+  diagnostics, and enables the lint extension if if wasn't already
+  active.
+  */
+  function setDiagnostics(state, diagnostics) {
+      return {
+          effects: maybeEnableLint(state, [setDiagnosticsEffect.of(diagnostics)])
+      };
+  }
+  /**
+  The state effect that updates the set of active diagnostics. Can
+  be useful when writing an extension that needs to track these.
+  */
+  const setDiagnosticsEffect = /*@__PURE__*/StateEffect.define();
+  const togglePanel = /*@__PURE__*/StateEffect.define();
+  const movePanelSelection = /*@__PURE__*/StateEffect.define();
+  const lintState = /*@__PURE__*/StateField.define({
+      create() {
+          return new LintState(Decoration.none, null, null);
+      },
+      update(value, tr) {
+          if (tr.docChanged && value.diagnostics.size) {
+              let mapped = value.diagnostics.map(tr.changes), selected = null, panel = value.panel;
+              if (value.selected) {
+                  let selPos = tr.changes.mapPos(value.selected.from, 1);
+                  selected = findDiagnostic(mapped, value.selected.diagnostic, selPos) || findDiagnostic(mapped, null, selPos);
+              }
+              if (!mapped.size && panel && tr.state.facet(lintConfig).autoPanel)
+                  panel = null;
+              value = new LintState(mapped, panel, selected);
+          }
+          for (let effect of tr.effects) {
+              if (effect.is(setDiagnosticsEffect)) {
+                  let panel = !tr.state.facet(lintConfig).autoPanel ? value.panel : effect.value.length ? LintPanel.open : null;
+                  value = LintState.init(effect.value, panel, tr.state);
+              }
+              else if (effect.is(togglePanel)) {
+                  value = new LintState(value.diagnostics, effect.value ? LintPanel.open : null, value.selected);
+              }
+              else if (effect.is(movePanelSelection)) {
+                  value = new LintState(value.diagnostics, value.panel, effect.value);
+              }
+          }
+          return value;
+      },
+      provide: f => [showPanel.from(f, val => val.panel),
+          EditorView.decorations.from(f, s => s.diagnostics)]
+  });
+  const activeMark = /*@__PURE__*/Decoration.mark({ class: "cm-lintRange cm-lintRange-active" });
+  function lintTooltip(view, pos, side) {
+      let { diagnostics } = view.state.field(lintState);
+      let found, start = -1, end = -1;
+      diagnostics.between(pos - (side < 0 ? 1 : 0), pos + (side > 0 ? 1 : 0), (from, to, { spec }) => {
+          if (pos >= from && pos <= to &&
+              (from == to || ((pos > from || side > 0) && (pos < to || side < 0)))) {
+              found = spec.diagnostics;
+              start = from;
+              end = to;
+              return false;
+          }
+      });
+      let diagnosticFilter = view.state.facet(lintConfig).tooltipFilter;
+      if (found && diagnosticFilter)
+          found = diagnosticFilter(found, view.state);
+      if (!found)
+          return null;
+      return {
+          pos: start,
+          end: end,
+          above: view.state.doc.lineAt(start).to < end,
+          create() {
+              return { dom: diagnosticsTooltip(view, found) };
+          }
+      };
+  }
+  function diagnosticsTooltip(view, diagnostics) {
+      return crelt("ul", { class: "cm-tooltip-lint" }, diagnostics.map(d => renderDiagnostic(view, d, false)));
+  }
+  /**
+  Command to close the lint panel, when open.
+  */
+  const closeLintPanel = (view) => {
+      let field = view.state.field(lintState, false);
+      if (!field || !field.panel)
+          return false;
+      view.dispatch({ effects: togglePanel.of(false) });
+      return true;
+  };
+  const lintPlugin = /*@__PURE__*/ViewPlugin.fromClass(class {
+      constructor(view) {
+          this.view = view;
+          this.timeout = -1;
+          this.set = true;
+          let { delay } = view.state.facet(lintConfig);
+          this.lintTime = Date.now() + delay;
+          this.run = this.run.bind(this);
+          this.timeout = setTimeout(this.run, delay);
+      }
+      run() {
+          clearTimeout(this.timeout);
+          let now = Date.now();
+          if (now < this.lintTime - 10) {
+              this.timeout = setTimeout(this.run, this.lintTime - now);
+          }
+          else {
+              this.set = false;
+              let { state } = this.view, { sources } = state.facet(lintConfig);
+              if (sources.length)
+                  batchResults(sources.map(s => Promise.resolve(s(this.view))), annotations => {
+                      if (this.view.state.doc == state.doc)
+                          this.view.dispatch(setDiagnostics(this.view.state, annotations.reduce((a, b) => a.concat(b))));
+                  }, error => { logException(this.view.state, error); });
+          }
+      }
+      update(update) {
+          let config = update.state.facet(lintConfig);
+          if (update.docChanged || config != update.startState.facet(lintConfig) ||
+              config.needsRefresh && config.needsRefresh(update)) {
+              this.lintTime = Date.now() + config.delay;
+              if (!this.set) {
+                  this.set = true;
+                  this.timeout = setTimeout(this.run, config.delay);
+              }
+          }
+      }
+      force() {
+          if (this.set) {
+              this.lintTime = Date.now();
+              this.run();
+          }
+      }
+      destroy() {
+          clearTimeout(this.timeout);
+      }
+  });
+  function batchResults(promises, sink, error) {
+      let collected = [], timeout = -1;
+      for (let p of promises)
+          p.then(value => {
+              collected.push(value);
+              clearTimeout(timeout);
+              if (collected.length == promises.length)
+                  sink(collected);
+              else
+                  timeout = setTimeout(() => sink(collected), 200);
+          }, error);
+  }
+  const lintConfig = /*@__PURE__*/Facet.define({
+      combine(input) {
+          return Object.assign({ sources: input.map(i => i.source).filter(x => x != null) }, combineConfig(input.map(i => i.config), {
+              delay: 750,
+              markerFilter: null,
+              tooltipFilter: null,
+              needsRefresh: null,
+              hideOn: () => null,
+          }, {
+              needsRefresh: (a, b) => !a ? b : !b ? a : u => a(u) || b(u)
+          }));
+      }
+  });
+  /**
+  Given a diagnostic source, this function returns an extension that
+  enables linting with that source. It will be called whenever the
+  editor is idle (after its content changed). If `null` is given as
+  source, this only configures the lint extension.
+  */
+  function linter(source, config = {}) {
+      return [
+          lintConfig.of({ source, config }),
+          lintPlugin,
+          lintExtensions
+      ];
+  }
+  function assignKeys(actions) {
+      let assigned = [];
+      if (actions)
+          actions: for (let { name } of actions) {
+              for (let i = 0; i < name.length; i++) {
+                  let ch = name[i];
+                  if (/[a-zA-Z]/.test(ch) && !assigned.some(c => c.toLowerCase() == ch.toLowerCase())) {
+                      assigned.push(ch);
+                      continue actions;
+                  }
+              }
+              assigned.push("");
+          }
+      return assigned;
+  }
+  function renderDiagnostic(view, diagnostic, inPanel) {
+      var _a;
+      let keys = inPanel ? assignKeys(diagnostic.actions) : [];
+      return crelt("li", { class: "cm-diagnostic cm-diagnostic-" + diagnostic.severity }, crelt("span", { class: "cm-diagnosticText" }, diagnostic.renderMessage ? diagnostic.renderMessage(view) : diagnostic.message), (_a = diagnostic.actions) === null || _a === void 0 ? void 0 : _a.map((action, i) => {
+          let fired = false, click = (e) => {
+              e.preventDefault();
+              if (fired)
+                  return;
+              fired = true;
+              let found = findDiagnostic(view.state.field(lintState).diagnostics, diagnostic);
+              if (found)
+                  action.apply(view, found.from, found.to);
+          };
+          let { name } = action, keyIndex = keys[i] ? name.indexOf(keys[i]) : -1;
+          let nameElt = keyIndex < 0 ? name : [name.slice(0, keyIndex),
+              crelt("u", name.slice(keyIndex, keyIndex + 1)),
+              name.slice(keyIndex + 1)];
+          return crelt("button", {
+              type: "button",
+              class: "cm-diagnosticAction",
+              onclick: click,
+              onmousedown: click,
+              "aria-label": ` Action: ${name}${keyIndex < 0 ? "" : ` (access key "${keys[i]})"`}.`
+          }, nameElt);
+      }), diagnostic.source && crelt("div", { class: "cm-diagnosticSource" }, diagnostic.source));
+  }
+  class DiagnosticWidget extends WidgetType {
+      constructor(sev) {
+          super();
+          this.sev = sev;
+      }
+      eq(other) { return other.sev == this.sev; }
+      toDOM() {
+          return crelt("span", { class: "cm-lintPoint cm-lintPoint-" + this.sev });
+      }
+  }
+  class PanelItem {
+      constructor(view, diagnostic) {
+          this.diagnostic = diagnostic;
+          this.id = "item_" + Math.floor(Math.random() * 0xffffffff).toString(16);
+          this.dom = renderDiagnostic(view, diagnostic, true);
+          this.dom.id = this.id;
+          this.dom.setAttribute("role", "option");
+      }
+  }
+  class LintPanel {
+      constructor(view) {
+          this.view = view;
+          this.items = [];
+          let onkeydown = (event) => {
+              if (event.keyCode == 27) { // Escape
+                  closeLintPanel(this.view);
+                  this.view.focus();
+              }
+              else if (event.keyCode == 38 || event.keyCode == 33) { // ArrowUp, PageUp
+                  this.moveSelection((this.selectedIndex - 1 + this.items.length) % this.items.length);
+              }
+              else if (event.keyCode == 40 || event.keyCode == 34) { // ArrowDown, PageDown
+                  this.moveSelection((this.selectedIndex + 1) % this.items.length);
+              }
+              else if (event.keyCode == 36) { // Home
+                  this.moveSelection(0);
+              }
+              else if (event.keyCode == 35) { // End
+                  this.moveSelection(this.items.length - 1);
+              }
+              else if (event.keyCode == 13) { // Enter
+                  this.view.focus();
+              }
+              else if (event.keyCode >= 65 && event.keyCode <= 90 && this.selectedIndex >= 0) { // A-Z
+                  let { diagnostic } = this.items[this.selectedIndex], keys = assignKeys(diagnostic.actions);
+                  for (let i = 0; i < keys.length; i++)
+                      if (keys[i].toUpperCase().charCodeAt(0) == event.keyCode) {
+                          let found = findDiagnostic(this.view.state.field(lintState).diagnostics, diagnostic);
+                          if (found)
+                              diagnostic.actions[i].apply(view, found.from, found.to);
+                      }
+              }
+              else {
+                  return;
+              }
+              event.preventDefault();
+          };
+          let onclick = (event) => {
+              for (let i = 0; i < this.items.length; i++) {
+                  if (this.items[i].dom.contains(event.target))
+                      this.moveSelection(i);
+              }
+          };
+          this.list = crelt("ul", {
+              tabIndex: 0,
+              role: "listbox",
+              "aria-label": this.view.state.phrase("Diagnostics"),
+              onkeydown,
+              onclick
+          });
+          this.dom = crelt("div", { class: "cm-panel-lint" }, this.list, crelt("button", {
+              type: "button",
+              name: "close",
+              "aria-label": this.view.state.phrase("close"),
+              onclick: () => closeLintPanel(this.view)
+          }, "×"));
+          this.update();
+      }
+      get selectedIndex() {
+          let selected = this.view.state.field(lintState).selected;
+          if (!selected)
+              return -1;
+          for (let i = 0; i < this.items.length; i++)
+              if (this.items[i].diagnostic == selected.diagnostic)
+                  return i;
+          return -1;
+      }
+      update() {
+          let { diagnostics, selected } = this.view.state.field(lintState);
+          let i = 0, needsSync = false, newSelectedItem = null;
+          let seen = new Set();
+          diagnostics.between(0, this.view.state.doc.length, (_start, _end, { spec }) => {
+              for (let diagnostic of spec.diagnostics) {
+                  if (seen.has(diagnostic))
+                      continue;
+                  seen.add(diagnostic);
+                  let found = -1, item;
+                  for (let j = i; j < this.items.length; j++)
+                      if (this.items[j].diagnostic == diagnostic) {
+                          found = j;
+                          break;
+                      }
+                  if (found < 0) {
+                      item = new PanelItem(this.view, diagnostic);
+                      this.items.splice(i, 0, item);
+                      needsSync = true;
+                  }
+                  else {
+                      item = this.items[found];
+                      if (found > i) {
+                          this.items.splice(i, found - i);
+                          needsSync = true;
+                      }
+                  }
+                  if (selected && item.diagnostic == selected.diagnostic) {
+                      if (!item.dom.hasAttribute("aria-selected")) {
+                          item.dom.setAttribute("aria-selected", "true");
+                          newSelectedItem = item;
+                      }
+                  }
+                  else if (item.dom.hasAttribute("aria-selected")) {
+                      item.dom.removeAttribute("aria-selected");
+                  }
+                  i++;
+              }
+          });
+          while (i < this.items.length && !(this.items.length == 1 && this.items[0].diagnostic.from < 0)) {
+              needsSync = true;
+              this.items.pop();
+          }
+          if (this.items.length == 0) {
+              this.items.push(new PanelItem(this.view, {
+                  from: -1, to: -1,
+                  severity: "info",
+                  message: this.view.state.phrase("No diagnostics")
+              }));
+              needsSync = true;
+          }
+          if (newSelectedItem) {
+              this.list.setAttribute("aria-activedescendant", newSelectedItem.id);
+              this.view.requestMeasure({
+                  key: this,
+                  read: () => ({ sel: newSelectedItem.dom.getBoundingClientRect(), panel: this.list.getBoundingClientRect() }),
+                  write: ({ sel, panel }) => {
+                      let scaleY = panel.height / this.list.offsetHeight;
+                      if (sel.top < panel.top)
+                          this.list.scrollTop -= (panel.top - sel.top) / scaleY;
+                      else if (sel.bottom > panel.bottom)
+                          this.list.scrollTop += (sel.bottom - panel.bottom) / scaleY;
+                  }
+              });
+          }
+          else if (this.selectedIndex < 0) {
+              this.list.removeAttribute("aria-activedescendant");
+          }
+          if (needsSync)
+              this.sync();
+      }
+      sync() {
+          let domPos = this.list.firstChild;
+          function rm() {
+              let prev = domPos;
+              domPos = prev.nextSibling;
+              prev.remove();
+          }
+          for (let item of this.items) {
+              if (item.dom.parentNode == this.list) {
+                  while (domPos != item.dom)
+                      rm();
+                  domPos = item.dom.nextSibling;
+              }
+              else {
+                  this.list.insertBefore(item.dom, domPos);
+              }
+          }
+          while (domPos)
+              rm();
+      }
+      moveSelection(selectedIndex) {
+          if (this.selectedIndex < 0)
+              return;
+          let field = this.view.state.field(lintState);
+          let selection = findDiagnostic(field.diagnostics, this.items[selectedIndex].diagnostic);
+          if (!selection)
+              return;
+          this.view.dispatch({
+              selection: { anchor: selection.from, head: selection.to },
+              scrollIntoView: true,
+              effects: movePanelSelection.of(selection)
+          });
+      }
+      static open(view) { return new LintPanel(view); }
+  }
+  function svg(content, attrs = `viewBox="0 0 40 40"`) {
+      return `url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" ${attrs}>${encodeURIComponent(content)}</svg>')`;
+  }
+  function underline(color) {
+      return svg(`<path d="m0 2.5 l2 -1.5 l1 0 l2 1.5 l1 0" stroke="${color}" fill="none" stroke-width=".7"/>`, `width="6" height="3"`);
+  }
+  const baseTheme = /*@__PURE__*/EditorView.baseTheme({
+      ".cm-diagnostic": {
+          padding: "3px 6px 3px 8px",
+          marginLeft: "-1px",
+          display: "block",
+          whiteSpace: "pre-wrap"
+      },
+      ".cm-diagnostic-error": { borderLeft: "5px solid #d11" },
+      ".cm-diagnostic-warning": { borderLeft: "5px solid orange" },
+      ".cm-diagnostic-info": { borderLeft: "5px solid #999" },
+      ".cm-diagnostic-hint": { borderLeft: "5px solid #66d" },
+      ".cm-diagnosticAction": {
+          font: "inherit",
+          border: "none",
+          padding: "2px 4px",
+          backgroundColor: "#444",
+          color: "white",
+          borderRadius: "3px",
+          marginLeft: "8px",
+          cursor: "pointer"
+      },
+      ".cm-diagnosticSource": {
+          fontSize: "70%",
+          opacity: .7
+      },
+      ".cm-lintRange": {
+          backgroundPosition: "left bottom",
+          backgroundRepeat: "repeat-x",
+          paddingBottom: "0.7px",
+      },
+      ".cm-lintRange-error": { backgroundImage: /*@__PURE__*/underline("#d11") },
+      ".cm-lintRange-warning": { backgroundImage: /*@__PURE__*/underline("orange") },
+      ".cm-lintRange-info": { backgroundImage: /*@__PURE__*/underline("#999") },
+      ".cm-lintRange-hint": { backgroundImage: /*@__PURE__*/underline("#66d") },
+      ".cm-lintRange-active": { backgroundColor: "#ffdd9980" },
+      ".cm-tooltip-lint": {
+          padding: 0,
+          margin: 0
+      },
+      ".cm-lintPoint": {
+          position: "relative",
+          "&:after": {
+              content: '""',
+              position: "absolute",
+              bottom: 0,
+              left: "-2px",
+              borderLeft: "3px solid transparent",
+              borderRight: "3px solid transparent",
+              borderBottom: "4px solid #d11"
+          }
+      },
+      ".cm-lintPoint-warning": {
+          "&:after": { borderBottomColor: "orange" }
+      },
+      ".cm-lintPoint-info": {
+          "&:after": { borderBottomColor: "#999" }
+      },
+      ".cm-lintPoint-hint": {
+          "&:after": { borderBottomColor: "#66d" }
+      },
+      ".cm-panel.cm-panel-lint": {
+          position: "relative",
+          "& ul": {
+              maxHeight: "100px",
+              overflowY: "auto",
+              "& [aria-selected]": {
+                  backgroundColor: "#ddd",
+                  "& u": { textDecoration: "underline" }
+              },
+              "&:focus [aria-selected]": {
+                  background_fallback: "#bdf",
+                  backgroundColor: "Highlight",
+                  color_fallback: "white",
+                  color: "HighlightText"
+              },
+              "& u": { textDecoration: "none" },
+              padding: 0,
+              margin: 0
+          },
+          "& [name=close]": {
+              position: "absolute",
+              top: "0",
+              right: "2px",
+              background: "inherit",
+              border: "none",
+              font: "inherit",
+              padding: 0,
+              margin: 0
+          }
+      }
+  });
+  function severityWeight(sev) {
+      return sev == "error" ? 4 : sev == "warning" ? 3 : sev == "info" ? 2 : 1;
+  }
+  function maxSeverity(diagnostics) {
+      let sev = "hint", weight = 1;
+      for (let d of diagnostics) {
+          let w = severityWeight(d.severity);
+          if (w > weight) {
+              weight = w;
+              sev = d.severity;
+          }
+      }
+      return sev;
+  }
+  class LintGutterMarker extends GutterMarker {
+      constructor(diagnostics) {
+          super();
+          this.diagnostics = diagnostics;
+          this.severity = maxSeverity(diagnostics);
+      }
+      toDOM(view) {
+          let elt = document.createElement("div");
+          elt.className = "cm-lint-marker cm-lint-marker-" + this.severity;
+          let diagnostics = this.diagnostics;
+          let diagnosticsFilter = view.state.facet(lintGutterConfig).tooltipFilter;
+          if (diagnosticsFilter)
+              diagnostics = diagnosticsFilter(diagnostics, view.state);
+          if (diagnostics.length)
+              elt.onmouseover = () => gutterMarkerMouseOver(view, elt, diagnostics);
+          return elt;
+      }
+  }
+  function trackHoverOn(view, marker) {
+      let mousemove = (event) => {
+          let rect = marker.getBoundingClientRect();
+          if (event.clientX > rect.left - 10 /* Hover.Margin */ && event.clientX < rect.right + 10 /* Hover.Margin */ &&
+              event.clientY > rect.top - 10 /* Hover.Margin */ && event.clientY < rect.bottom + 10 /* Hover.Margin */)
+              return;
+          for (let target = event.target; target; target = target.parentNode) {
+              if (target.nodeType == 1 && target.classList.contains("cm-tooltip-lint"))
+                  return;
+          }
+          window.removeEventListener("mousemove", mousemove);
+          if (view.state.field(lintGutterTooltip))
+              view.dispatch({ effects: setLintGutterTooltip.of(null) });
+      };
+      window.addEventListener("mousemove", mousemove);
+  }
+  function gutterMarkerMouseOver(view, marker, diagnostics) {
+      function hovered() {
+          let line = view.elementAtHeight(marker.getBoundingClientRect().top + 5 - view.documentTop);
+          const linePos = view.coordsAtPos(line.from);
+          if (linePos) {
+              view.dispatch({ effects: setLintGutterTooltip.of({
+                      pos: line.from,
+                      above: false,
+                      clip: false,
+                      create() {
+                          return {
+                              dom: diagnosticsTooltip(view, diagnostics),
+                              getCoords: () => marker.getBoundingClientRect()
+                          };
+                      }
+                  }) });
+          }
+          marker.onmouseout = marker.onmousemove = null;
+          trackHoverOn(view, marker);
+      }
+      let { hoverTime } = view.state.facet(lintGutterConfig);
+      let hoverTimeout = setTimeout(hovered, hoverTime);
+      marker.onmouseout = () => {
+          clearTimeout(hoverTimeout);
+          marker.onmouseout = marker.onmousemove = null;
+      };
+      marker.onmousemove = () => {
+          clearTimeout(hoverTimeout);
+          hoverTimeout = setTimeout(hovered, hoverTime);
+      };
+  }
+  function markersForDiagnostics(doc, diagnostics) {
+      let byLine = Object.create(null);
+      for (let diagnostic of diagnostics) {
+          let line = doc.lineAt(diagnostic.from);
+          (byLine[line.from] || (byLine[line.from] = [])).push(diagnostic);
+      }
+      let markers = [];
+      for (let line in byLine) {
+          markers.push(new LintGutterMarker(byLine[line]).range(+line));
+      }
+      return RangeSet.of(markers, true);
+  }
+  const lintGutterExtension = /*@__PURE__*/gutter({
+      class: "cm-gutter-lint",
+      markers: view => view.state.field(lintGutterMarkers),
+      widgetMarker: (view, widget, block) => {
+          let diagnostics = [];
+          view.state.field(lintGutterMarkers).between(block.from, block.to, (from, to, value) => {
+              if (from > block.from && from < block.to)
+                  diagnostics.push(...value.diagnostics);
+          });
+          return diagnostics.length ? new LintGutterMarker(diagnostics) : null;
+      }
+  });
+  const lintGutterMarkers = /*@__PURE__*/StateField.define({
+      create() {
+          return RangeSet.empty;
+      },
+      update(markers, tr) {
+          markers = markers.map(tr.changes);
+          let diagnosticFilter = tr.state.facet(lintGutterConfig).markerFilter;
+          for (let effect of tr.effects) {
+              if (effect.is(setDiagnosticsEffect)) {
+                  let diagnostics = effect.value;
+                  if (diagnosticFilter)
+                      diagnostics = diagnosticFilter(diagnostics || [], tr.state);
+                  markers = markersForDiagnostics(tr.state.doc, diagnostics.slice(0));
+              }
+          }
+          return markers;
+      }
+  });
+  const setLintGutterTooltip = /*@__PURE__*/StateEffect.define();
+  const lintGutterTooltip = /*@__PURE__*/StateField.define({
+      create() { return null; },
+      update(tooltip, tr) {
+          if (tooltip && tr.docChanged)
+              tooltip = hideTooltip(tr, tooltip) ? null : Object.assign(Object.assign({}, tooltip), { pos: tr.changes.mapPos(tooltip.pos) });
+          return tr.effects.reduce((t, e) => e.is(setLintGutterTooltip) ? e.value : t, tooltip);
+      },
+      provide: field => showTooltip.from(field)
+  });
+  const lintGutterTheme = /*@__PURE__*/EditorView.baseTheme({
+      ".cm-gutter-lint": {
+          width: "1.4em",
+          "& .cm-gutterElement": {
+              padding: ".2em"
+          }
+      },
+      ".cm-lint-marker": {
+          width: "1em",
+          height: "1em"
+      },
+      ".cm-lint-marker-info": {
+          content: /*@__PURE__*/svg(`<path fill="#aaf" stroke="#77e" stroke-width="6" stroke-linejoin="round" d="M5 5L35 5L35 35L5 35Z"/>`)
+      },
+      ".cm-lint-marker-warning": {
+          content: /*@__PURE__*/svg(`<path fill="#fe8" stroke="#fd7" stroke-width="6" stroke-linejoin="round" d="M20 6L37 35L3 35Z"/>`),
+      },
+      ".cm-lint-marker-error": {
+          content: /*@__PURE__*/svg(`<circle cx="20" cy="20" r="15" fill="#f87" stroke="#f43" stroke-width="6"/>`)
+      },
+  });
+  const lintExtensions = [
+      lintState,
+      /*@__PURE__*/EditorView.decorations.compute([lintState], state => {
+          let { selected, panel } = state.field(lintState);
+          return !selected || !panel || selected.from == selected.to ? Decoration.none : Decoration.set([
+              activeMark.range(selected.from, selected.to)
+          ]);
+      }),
+      /*@__PURE__*/hoverTooltip(lintTooltip, { hideOn: hideTooltip }),
+      baseTheme
+  ];
+  const lintGutterConfig = /*@__PURE__*/Facet.define({
+      combine(configs) {
+          return combineConfig(configs, {
+              hoverTime: 300 /* Hover.Time */,
+              markerFilter: null,
+              tooltipFilter: null
+          });
+      }
+  });
+  /**
+  Returns an extension that installs a gutter showing markers for
+  each line that has diagnostics, which can be hovered over to see
+  the diagnostics.
+  */
+  function lintGutter(config = {}) {
+      return [lintGutterConfig.of(config), lintGutterMarkers, lintGutterExtension, lintGutterTheme, lintGutterTooltip];
+  }
+
+  // src/js/editor.js
+
+
   jQuery(document).ready(function ($) {
-    console.log("DataEngine: editor.bundle.js loaded successfully.");
+      console.log("DataEngine: editor.bundle.js loaded successfully.");
 
-    const dataEngineTagStyling = EditorView.baseTheme({
-      "& .cm-data-engine-tag": { color: "#C678DD" },
-      "& .cm-data-engine-conditional": { color: "#E5C07B" },
-    });
+      /**
+       * ========================================================================
+       * 1. GRANULAR SYNTAX HIGHLIGHTING (UNCHANGED)
+       * ========================================================================
+       */
+      // ... (ta sekcja pozostaje bez zmian)
+      const D = {
+          delim: Decoration.mark({ class: 'cm-de-delim' }),
+          source: Decoration.mark({ class: 'cm-de-source' }),
+          separator: Decoration.mark({ class: 'cm-de-separator' }),
+          field: Decoration.mark({ class: 'cm-de-field' }),
+          property: Decoration.mark({ class: 'cm-de-property' }),
+          pipe: Decoration.mark({ class: 'cm-de-pipe' }),
+          filter: Decoration.mark({ class: 'cm-de-filter' }),
+          conditional: Decoration.mark({ class: 'cm-de-conditional' }),
+      };
 
-    const dataEngineSyntaxHighlighting = ViewPlugin.fromClass(class {
+      // MODIFIED: Add styling for the linter (error messages)
+      const dataEngineTheme = EditorView.baseTheme({
+          '& .cm-de-delim': { color: '#ff6900', fontWeight: 'bold' },
+          '& .cm-de-source': { color: '#00bcff', fontWeight: 'bold' },
+          '& .cm-de-separator': { color: '#fdc700' },
+          '& .cm-de-field': { color: '#b8e6fe' },
+          '& .cm-de-property': { color: '#8ec5ff' },
+          '& .cm-de-pipe': { color: '#fdc700', fontWeight: 'bold' },
+          '& .cm-de-filter': { color: '#fff085' },
+          '& .cm-de-conditional': { color: '#bbf451', fontStyle: 'italic' },
+          // NEW: Styles for linting gutter and diagnostics
+          '.cm-lintRange-error': { 
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M0 1.5 L8 1.5 M0 3.5 L8 3.5 M0 5.5 L8 5.5' stroke='%23e06c75' stroke-width='1.2'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'repeat-x',
+              backgroundPosition: 'bottom',
+          },
+          '.cm-tooltip-lint': {
+              backgroundColor: '#3b2323',
+              border: '1px solid #e06c75',
+              color: '#e06c75'
+          }
+      });
+
+      const dataEngineSyntaxHighlighting = ViewPlugin.fromClass(class {
+          // ... (ta klasa pozostaje bez zmian)
           constructor(view) {
               this.decorations = this.buildDecorations(view);
           }
@@ -24528,86 +26414,280 @@
           }
 
           buildDecorations(view) {
-              const builder = new RangeSetBuilder(); // POPRAWIONA SKŁADNIA
-              const tagRegex = /%[^%]+%/g;
-              const conditionalRegex = /\[\/?if[^\]]*\]|\[else(?: if)?[^\]]*\]/g;
+              const builder = new RangeSetBuilder();
+              const decorations = [];
 
-              for (let { from, to } of view.visibleRanges) {
-                  let text = view.state.doc.sliceString(from, to);
+              // Process each visible range
+              for (const { from, to } of view.visibleRanges) {
+                  const text = view.state.doc.sliceString(from, to);
+                  
+                  // Find conditional tags first
+                  const conditionalRegex = /\[\/?if[^\]]*\]|\[else(?: if)?[^\]]*\]/g;
                   let match;
-                  while ((match = tagRegex.exec(text))) {
-                      builder.add(from + match.index, from + match.index + match[0].length, Decoration.mark({ class: 'cm-data-engine-tag' }));
+                  while ((match = conditionalRegex.exec(text)) !== null) {
+                      const start = from + match.index;
+                      const end = start + match[0].length;
+                      decorations.push({ from: start, to: end, decoration: D.conditional });
                   }
-                  while ((match = conditionalRegex.exec(text))) {
-                      builder.add(from + match.index, from + match.index + match[0].length, Decoration.mark({ class: 'cm-data-engine-conditional' }));
+
+                  // NEW: Updated regex to correctly handle filters with spaces.
+                  const tagRegex = /(%)([\w]+)(:)([\w.-]+)(?:\s*(\|)\s*([^%]*?))?(%)/g;
+                  
+                  while ((match = tagRegex.exec(text))) {
+                      const matchStart = from + match.index;
+                      let pos = matchStart;
+                      
+                      // match[1] is the opening '%'
+                      decorations.push({ from: pos, to: pos + match[1].length, decoration: D.delim });
+                      pos += match[1].length;
+
+                      // match[2] is the source
+                      decorations.push({ from: pos, to: pos + match[2].length, decoration: D.source });
+                      pos += match[2].length;
+
+                      // match[3] is the ':'
+                      decorations.push({ from: pos, to: pos + match[3].length, decoration: D.separator });
+                      pos += match[3].length;
+
+                      // match[4] is the field with optional properties
+                      const fieldPart = match[4];
+                      if (fieldPart.includes('.')) {
+                          const dotIndex = fieldPart.indexOf('.');
+                          decorations.push({ from: pos, to: pos + dotIndex, decoration: D.field });
+                          decorations.push({ from: pos + dotIndex, to: pos + dotIndex + 1, decoration: D.separator });
+                          decorations.push({ from: pos + dotIndex + 1, to: pos + fieldPart.length, decoration: D.property });
+                      } else {
+                          decorations.push({ from: pos, to: pos + fieldPart.length, decoration: D.field });
+                      }
+                      pos += fieldPart.length;
+
+                      // Check for filter part (now correctly handles spaces)
+                      // match[5] is the '|' and match[6] is the filter content
+                      if (match[5] && match[6] !== undefined) {
+                          const spaceBeforePipe = match[0].substring(pos - matchStart).match(/^\s*/)[0].length;
+                          pos += spaceBeforePipe;
+
+                          // Pipe |
+                          decorations.push({ from: pos, to: pos + 1, decoration: D.pipe });
+                          pos += 1;
+
+                          const spaceAfterPipe = match[0].substring(pos - matchStart).match(/^\s*/)[0].length;
+                          pos += spaceAfterPipe;
+
+                          // Filter content
+                          const filterContent = match[6].trimEnd(); // Trim trailing spaces if any
+                          decorations.push({ from: pos, to: pos + filterContent.length, decoration: D.filter });
+                          pos += filterContent.length;
+                           pos += (match[6].length - filterContent.length); // Add back trailing spaces to position
+                      }
+                      
+                      // Find the closing '%'
+                      const closingPercentIndex = match[0].lastIndexOf('%');
+                      if (closingPercentIndex > 0) {
+                          const closingPos = matchStart + closingPercentIndex;
+                           decorations.push({ from: closingPos, to: closingPos + 1, decoration: D.delim });
+                      }
                   }
               }
+
+              // CRITICAL: Sort decorations by position before adding to builder
+              decorations.sort((a, b) => a.from - b.from);
+
+              // Add sorted decorations to builder
+              for (const { from, to, decoration } of decorations) {
+                  // A safety check to prevent overlapping decorations which can cause issues.
+                  if (!decorations.some(d => d !== decoration && d.from < to && d.to > from && d.from < from)) {
+                      builder.add(from, to, decoration);
+                  }
+              }
+
               return builder.finish();
           }
       }, {
           decorations: v => v.decorations
       });
+      
+      /**
+       * ========================================================================
+       * NEW: 2. REAL-TIME SYNTAX VALIDATION (LINTING)
+       * ========================================================================
+       * This function provides real-time error checking against our data dictionary.
+       */
+      const dataEngineLinter = (dictionary) => linter(view => {
+          let diagnostics = [];
+          const text = view.state.doc.toString();
+          const tagRegex = /%([a-zA-Z0-9_.-]+:[a-zA-Z0-9_.-]+(?:\|[^%]+)?)%/g;
+          let match;
 
-    function createDataEngineCompletionSource(dictionary) {
-      return (context) => {
-        let match = context.matchBefore(/%[\w:.-]*$/);
-        if (!match) return null;
-        if (match.from > 0) {
-          const prevChar = context.state.sliceDoc(match.from - 1, match.from);
-          if (/[\w_]/.test(prevChar)) {
-            return null;
-          }
-        }
-        const innerText = match.text.substring(1);
-        if (innerText.includes(".")) {
-          const parts = innerText.split(":");
-          if (parts.length < 2 || parts[0] !== "acf") return null;
-          const fieldName = parts[1].split(".")[0];
-          const acfField = dictionary.acf.find((f) => f.name === fieldName);
-          if (acfField && acfField.properties) {
-            return {
-              from: match.from + innerText.lastIndexOf(".") + 2,
-              options: acfField.properties.map((prop) => ({
-                label: prop.name,
-                type: "property",
-                info: prop.label,
-              })),
-            };
-          }
-        }
-        if (innerText.includes(":")) {
-          const [source] = innerText.split(":");
-          if (dictionary[source]) {
-            return {
-              from: match.from + source.length + 2,
-              options: dictionary[source].map((field) => ({
-                label: field.name,
-                type: "variable",
-                info: field.label,
-                apply:
-                  field.properties && field.properties.length > 1
-                    ? `${field.name}.`
-                    : field.name,
-              })),
-            };
-          }
-        }
-        return {
-          from: match.from + 1,
-          options: ["acf", "post", "sub"].map((label) => ({
-            label,
-            type: "namespace",
-            apply: `${label}:`,
-          })),
-        };
-      };
-    }
+          while ((match = tagRegex.exec(text))) {
+              const fullTag = match[1]; // e.g., "acf:my_field.url|filter"
+              const tagContent = fullTag.split('|')[0]; // e.g., "acf:my_field.url"
+              const [source, fieldPath] = tagContent.split(':');
+              
+              // Rule 1: Validate data source
+              if (!['acf', 'post', 'sub'].includes(source)) {
+                  diagnostics.push({
+                      from: match.index + 1,
+                      to: match.index + 1 + source.length,
+                      severity: 'error',
+                      message: `Unknown data source: '${source}'. Available: acf, post, sub.`
+                  });
+                  continue; // Skip further checks for this tag
+              }
 
-    /**
-     * Tworzy i pokazuje modal z edytorem CodeMirror, teraz z obsługą anulowania.
-     */
-    function showEditorModal(initialContent, dataDictionary, onSave, onCancel) {
-      const modalHTML = `
+              if (fieldPath) {
+                  const fieldName = fieldPath.split('.')[0];
+                  
+                  // Rule 2: Validate field name existence
+                  if (dictionary[source] && !dictionary[source].some(field => field.name === fieldName)) {
+                      diagnostics.push({
+                          from: match.index + 1 + source.length + 1,
+                          to: match.index + 1 + source.length + 1 + fieldName.length,
+                          severity: 'error',
+                          message: `Field '${fieldName}' not found in '${source}' source.`
+                      });
+                  }
+              }
+          }
+          
+          return diagnostics;
+      });
+
+
+      /**
+       * ========================================================================
+       * 3. AUTOCOMPLETION LOGIC (UNCHANGED)
+       * ========================================================================
+       */
+      // ... (ta sekcja pozostaje bez zmian)
+      function createDataEngineCompletionSource(dictionary) {
+          return (context) => {
+              const line = context.state.doc.lineAt(context.pos);
+              const lineText = line.text;
+              const posInLine = context.pos - line.from;
+              
+              // Find the tag we're currently in
+              const tagRegex = /%([^%]*)$/;
+              const beforeCursor = lineText.substring(0, posInLine);
+              const tagMatch = beforeCursor.match(tagRegex);
+              
+              if (!tagMatch) return null;
+              
+              const tagContent = tagMatch[1];
+              const tagStart = context.pos - tagContent.length;
+              
+              // --- Context: Property Completion ---
+              const dotIndex = tagContent.lastIndexOf('.');
+              if (dotIndex > 0) {
+                  const beforeDot = tagContent.substring(0, dotIndex);
+                  
+                  if (beforeDot.includes(':')) {
+                      const [source, fieldName] = beforeDot.split(':');
+                      if (source === 'acf' && dictionary.acf) {
+                          const acfField = dictionary.acf.find(f => f.name === fieldName);
+                          if (acfField && acfField.properties) {
+                              return {
+                                  from: tagStart + dotIndex + 1,
+                                  options: acfField.properties.map(prop => ({
+                                      label: prop.name,
+                                      type: "property",
+                                      info: prop.label,
+                                      // NEW: Smartly auto-close the tag after selecting a property
+                                      apply: (view, completion, from, to) => {
+                                          const needsClosing = view.state.doc.sliceString(to, to + 1) !== '%';
+                                          const textToApply = needsClosing ? `${prop.name}%` : prop.name;
+
+                                          view.dispatch({
+                                              changes: { from, to, insert: textToApply },
+                                              selection: { anchor: from + textToApply.length }
+                                          });
+                                      }
+                                  })),
+                                  validFor: /^[\w-]*$/
+                              };
+                          }
+                      }
+                  }
+                  return null;
+              }
+
+              // --- Context: Field Name Completion ---
+              const colonIndex = tagContent.indexOf(':');
+              if (colonIndex > 0) {
+                  const source = tagContent.substring(0, colonIndex);
+                  
+                  if (dictionary[source]) {
+                      return {
+                          from: tagStart + colonIndex + 1,
+                          options: dictionary[source].map(field => ({
+                              label: field.name,
+                              type: "variable",
+                              info: field.label,
+                              apply: (view, completion, from, to) => {
+                                  const hasProperties = field.properties && field.properties.length > 0;
+                                  let textToApply;
+                                  
+                                  if (hasProperties) {
+                                      textToApply = `${field.name}.`;
+                                  } else {
+                                      // NEW: Smartly auto-close the tag if the field has no properties
+                                      const needsClosing = view.state.doc.sliceString(to, to + 1) !== '%';
+                                      textToApply = needsClosing ? `${field.name}%` : field.name;
+                                  }
+                                  
+                                  view.dispatch({
+                                      changes: { from, to, insert: textToApply },
+                                      selection: { anchor: from + textToApply.length }
+                                  });
+                                  
+                                  // If we added a dot, trigger property completion
+                                  if (hasProperties) {
+                                      setTimeout(() => {
+                                          startCompletion(view);
+                                      }, 10);
+                                  }
+                              }
+                          })),
+                          validFor: /^[\w-]*$/
+                      };
+                  }
+                  return null;
+              }
+
+              // --- Context: Source Completion ---
+              return {
+                  from: tagStart,
+                  options: ["acf", "post", "sub"].map(label => ({
+                      label,
+                      type: "namespace",
+                      info: `Data from "${label}" source`,
+                      apply: (view, completion, from, to) => {
+                          const textToApply = `${label}:`;
+                          
+                          view.dispatch({
+                              changes: { from, to, insert: textToApply },
+                              selection: { anchor: from + textToApply.length }
+                          });
+                          
+                          // Immediately trigger field completion
+                          setTimeout(() => {
+                              startCompletion(view);
+                          }, 10);
+                      }
+                  })),
+                  validFor: /^\w*$/
+              };
+          };
+      }
+
+      /**
+       * ========================================================================
+       * 4. MODAL AND EDITOR INITIALIZATION (WITH LINTING)
+       * ========================================================================
+       * Added the linter and lintGutter extensions.
+       */
+      function showEditorModal(initialContent, dataDictionary, onSave, onCancel) {
+          const modalHTML = `
             <div class="data-engine-modal">
                 <div class="modal-header">DataEngine Live Editor</div>
                 <div class="modal-content"></div>
@@ -24616,161 +26696,138 @@
                     <button class="elementor-button elementor-button-success" id="de-save-button">Save & Close</button>
                 </div>
             </div>`;
-      $("body").append(modalHTML);
-      const contentArea = document.querySelector(
-        ".data-engine-modal .modal-content"
-      );
+          $("body").append(modalHTML);
+          
+          const contentArea = document.querySelector(".data-engine-modal .modal-content");
+          const dataEngineCompletions = createDataEngineCompletionSource(dataDictionary);
+          // NEW: Create the linter instance with our data dictionary
+          const liveLinter = dataEngineLinter(dataDictionary);
 
-      const dataEngineCompletions =
-        createDataEngineCompletionSource(dataDictionary);
+          const editorState = EditorState.create({
+              doc: initialContent,
+              extensions: [
+                  oneDark,
+                  EditorView.lineWrapping,
+                  html(),
+                  dataEngineTheme,
+                  dataEngineSyntaxHighlighting,
+                  closeBrackets(),
+                  autocompletion({ 
+                      override: [dataEngineCompletions],
+                      activateOnTyping: true,
+                      maxRenderedOptions: 20
+                  }),
+                  // NEW: Enable the linter and the gutter for displaying icons
+                  liveLinter,
+                  lintGutter(),
+                  keymap.of([
+                      ...completionKeymap,
+                      ...defaultKeymap,
+                      indentWithTab,
+                      {
+                          key: "Escape",
+                          run: (view) => {
+                              $("#de-cancel-button").click();
+                              return true;
+                          },
+                      },
+                  ])
+              ],
+          });
 
-      const editorState = EditorState.create({
-        doc: initialContent,
-        extensions: [
-          oneDark,
-          EditorView.lineWrapping,
-          html(),
-          dataEngineSyntaxHighlighting,
-          dataEngineTagStyling,
-          autocompletion({ override: [dataEngineCompletions] }),
-          // --- ZMIANA 2: Poprawna obsługa klawiszy, w tym ESC ---
-          keymap.of([
-            ...completionKeymap,
-            ...defaultKeymap,
-            indentWithTab, // Umożliwia wcięcia tabulatorem
-            {
-              key: "Escape",
-              run: (view) => {
-                // Programowe kliknięcie naszego nowego przycisku "Cancel"
-                $("#de-cancel-button").click();
-                return true; // Zwracamy true, aby zatrzymać dalszą propagację zdarzenia
-              },
-            },
-          ]),
-          EditorView.updateListener.of(update => {
-                      if (update.docChanged) {
-                          const lastChange = update.changes.map.mapPos(update.changes.map.mapPos(update.startState.selection.main.head, -1), 1);
-                          const lastChar = update.state.sliceDoc(lastChange - 1, lastChange);
-                          if (lastChar === ':') {
-                             startCompletion(update.view);
-                          }
-                      }
-                  })
-        ],
-      });
-      const editorView = new EditorView({
-        state: editorState,
-        parent: contentArea,
-      });
+          const editorView = new EditorView({
+              state: editorState,
+              parent: contentArea,
+          });
 
-      // --- ZMIANA 3: Dodanie obsługi dla przycisku "Cancel" ---
-      $("#de-cancel-button").on("click", function () {
-        onCancel(); // Wywołujemy callback anulowania
-        $(".data-engine-modal").remove();
-      });
+          $("#de-cancel-button").on("click", function () {
+              onCancel();
+              $(".data-engine-modal").remove();
+          });
 
-      $("#de-save-button").on("click", function () {
-        onSave(editorView.state.doc.toString());
-        $(".data-engine-modal").remove();
-      });
-    }
-
-    /**
-     * Pokazuje nakładkę z dynamiczną zawartością.
-     */
-    function showOverlay(content) {
-      $(".data-engine-overlay").remove();
-      $("body").append(`<div class="data-engine-overlay">${content}</div>`);
-      setTimeout(() => $(".data-engine-overlay").addClass("is-visible"), 10);
-    }
-
-    /**
-     * Ukrywa i usuwa nakładkę z opóźnieniem.
-     */
-    function hideOverlay() {
-      $(".data-engine-overlay")
-        .removeClass("is-visible")
-        .delay(300)
-        .queue(function () {
-          $(this).remove();
-        });
-    }
-
-    // --- GŁÓWNA LOGIKA NASŁUCHU NA PRZYCISK ---
-    const $panel = $("#elementor-panel");
-    $panel.on(
-      "click",
-      'button.elementor-button[data-event="data-engine:launch-editor"]',
-      function () {
-        const $textarea = $(this)
-          .closest(".elementor-control")
-          .prev(".elementor-control-type-textarea")
-          .find("textarea");
-
-        showOverlay(`
-            <div class="data-engine-loader">
-                <div class="spinner"></div>
-                <div class="status-text">Fetching data dictionary...</div>
-            </div>`);
-
-        const editorConfig = elementor.config.document;
-        const ajaxData = {
-          action: "data_engine_get_data_dictionary",
-          nonce: DataEngineEditorConfig.nonce,
-        };
-        if (editorConfig.preview && editorConfig.preview.id) {
-          ajaxData.preview_id = editorConfig.preview.id;
-        } else {
-          ajaxData.post_id = editorConfig.id;
-        }
-
-        $.ajax({
-          url: DataEngineEditorConfig.ajax_url,
-          type: "POST",
-          data: ajaxData,
-          success: function (response) {
-            if (response.success) {
-              $(".data-engine-overlay .status-text").text(
-                "Initializing editor..."
-              );
-
-              setTimeout(function () {
-                // --- ZMIANA 4: Nakładka NIE jest już ukrywana ---
-                // Usuwamy tylko zawartość (spinner i tekst), pozostawiając ciemne tło.
-                $(".data-engine-overlay").empty();
-
-                showEditorModal(
-                  $textarea.val(),
-                  response.data,
-                  // Funkcja `onSave` (po kliknięciu "Save & Close"):
-                  function (newContent) {
-                    $textarea.val(newContent).trigger("input");
-                    showOverlay(`
-                                    <div class="data-engine-success">
-                                        <div class="icon-checkmark">✓</div>
-                                        <div>Saved successfully!</div>
-                                    </div>`);
-                    setTimeout(hideOverlay, 1500);
-                  },
-                  // Funkcja `onCancel` (po kliknięciu "Cancel" lub ESC):
-                  function () {
-                    console.log("DataEngine: Editor closed without saving.");
-                    hideOverlay(); // Ukrywamy nakładkę po anulowaniu
-                  }
-                );
-              }, 300);
-            } else {
-              hideOverlay();
-              alert("Error: Could not fetch data dictionary from the server.");
-            }
-          },
-          error: function () {
-            hideOverlay();
-            alert("Error: The AJAX request to the server failed.");
-          },
-        });
+          $("#de-save-button").on("click", function () {
+              onSave(editorView.state.doc.toString());
+              $(".data-engine-modal").remove();
+          });
       }
-    );
+
+      /**
+       * ========================================================================
+       * 5. OVERLAY AND MAIN BUTTON LOGIC (UNCHANGED)
+       * ========================================================================
+       */
+      // ... (ta sekcja pozostaje bez zmian)
+      function showOverlay(content) {
+          $(".data-engine-overlay").remove();
+          $("body").append(`<div class="data-engine-overlay">${content}</div>`);
+          setTimeout(() => $(".data-engine-overlay").addClass("is-visible"), 10);
+      }
+
+      function hideOverlay() {
+          $(".data-engine-overlay").removeClass("is-visible").delay(300).queue(function () {
+              $(this).remove();
+          });
+      }
+
+      const $panel = $("#elementor-panel");
+      $panel.on('click', 'button.elementor-button[data-event="data-engine:launch-editor"]', function () {
+          const $textarea = $(this).closest(".elementor-control").prev(".elementor-control-type-textarea").find("textarea");
+          if (!$textarea.length) {
+              console.error('DataEngine Error: Could not find the target textarea.');
+              return;
+          }
+
+          showOverlay(`<div class="data-engine-loader"><div class="spinner"></div><div class="status-text">Fetching data dictionary...</div></div>`);
+
+          const editorConfig = elementor.config.document;
+          const ajaxData = {
+              action: "data_engine_get_data_dictionary",
+              nonce: DataEngineEditorConfig.nonce,
+          };
+
+          // Determine the context: preview or actual post
+          if (editorConfig.preview && editorConfig.preview.id) {
+              ajaxData.preview_id = editorConfig.preview.id;
+          } else {
+              ajaxData.post_id = editorConfig.id;
+          }
+
+          $.ajax({
+              url: DataEngineEditorConfig.ajax_url,
+              type: "POST",
+              data: ajaxData,
+              success: function (response) {
+                  if (response.success) {
+                      $(".data-engine-overlay .status-text").text("Initializing editor...");
+                      setTimeout(function () {
+                          $(".data-engine-overlay").empty();
+                          showEditorModal(
+                              $textarea.val(),
+                              response.data,
+                              (newContent) => {
+                                  $textarea.val(newContent).trigger("input");
+                                  showOverlay(`<div class="data-engine-success"><div class="icon-checkmark">✓</div><div>Saved successfully!</div></div>`);
+                                  setTimeout(hideOverlay, 1500);
+                              },
+                              () => {
+                                  console.log("DataEngine: Editor closed without saving.");
+                                  hideOverlay();
+                              }
+                          );
+                      }, 300);
+                  } else {
+                      hideOverlay();
+                      alert("Error: Could not fetch data dictionary from the server. " + (response.data?.message || ''));
+                  }
+              },
+              error: function (jqXHR, textStatus, errorThrown) {
+                  hideOverlay();
+                  alert("Error: The AJAX request to the server failed. " + textStatus);
+                  console.error("DataEngine AJAX Error:", textStatus, errorThrown, jqXHR.responseText);
+              },
+          });
+      });
+
   });
 
 })();

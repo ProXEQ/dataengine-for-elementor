@@ -148,42 +148,86 @@ final class Plugin {
 
     public function admin_ajax_get_data_dictionary(): void {
         check_ajax_referer('data-engine-editor-nonce', 'nonce');
+        
         $post_id = !empty($_POST['preview_id']) ? absint($_POST['preview_id']) : (!empty($_POST['post_id']) ? absint($_POST['post_id']) : 0);
-        if (!$post_id) { wp_send_json_error(['message' => 'Could not determine context.']); }
+        if (!$post_id) { 
+            wp_send_json_error(['message' => 'Could not determine context.']);
+            return;
+        }
 
-        $dictionary = ['post' => [ /* ... (bez zmian) ... */ ], 'acf' => []];
-        $fields = get_field_objects($post_id, false, false);
+        // Initialize the dictionary with post fields using our new method
+        $dictionary = [
+            'post' => $this->data_provider->get_all_post_fields_for_editor(),
+            'acf'  => [], // Start with an empty ACF array
+            'sub'  => [], // Prepare for sub-fields in repeaters
+        ];
+
+        // Get ACF field objects assigned to this post
+        $fields = get_field_objects($post_id);
 
         if ($fields) {
             foreach ($fields as $field) {
-                $field_data = ['name' => $field['name'], 'label' => $field['label'], 'type' => $field['type'], 'properties' => [['name' => 'label', 'label' => 'Field Label']]];
+                // Base structure for every field
+                $field_data = [
+                    'name'       => $field['name'],
+                    'label'      => $field['label'],
+                    'type'       => $field['type'],
+                    'properties' => [] // Start with empty properties
+                ];
                 
-                // --- KLUCZOWA POPRAWKA DLA TAXONOMII ---
-                if ($field['type'] === 'taxonomy') {
-                    $field_data['properties'] = array_merge($field_data['properties'], [
-                        ['name' => 'term_id', 'label' => 'Term ID'],
-                        ['name' => 'name', 'label' => 'Term Name'],
-                        ['name' => 'slug', 'label' => 'Term Slug'],
-                        ['name' => 'taxonomy', 'label' => 'Taxonomy Name'],
-                    ]);
-                } elseif (in_array($field['type'], ['image', 'file'])) {
-                    $field_data['properties'] = array_merge($field_data['properties'], [
-                        ['name' => 'url', 'label' => 'URL'], ['name' => 'alt', 'label' => 'Alt Text'],
-                    ]);
-                } elseif (in_array($field['type'], ['post_object', 'page_link'])) {
-                    $field_data['properties'] = array_merge($field_data['properties'], [
-                        ['name' => 'ID', 'label' => 'Post ID'], ['name' => 'post_title', 'label' => 'Post Title'], ['name' => 'permalink', 'label' => 'Permalink']
-                    ]);
-                } elseif ($field['type'] === 'user') {
-                     $field_data['properties'] = array_merge($field_data['properties'], [
-                        ['name' => 'ID', 'label' => 'User ID'], ['name' => 'display_name', 'label' => 'Display Name'], ['name' => 'user_email', 'label' => 'User Email']
-                    ]);
+                // Add properties based on field type
+                switch ($field['type']) {
+                    case 'taxonomy':
+                        $field_data['properties'] = [
+                            ['name' => 'term_id', 'label' => 'Term ID'],
+                            ['name' => 'name', 'label' => 'Term Name'],
+                            ['name' => 'slug', 'label' => 'Term Slug'],
+                            ['name' => 'taxonomy', 'label' => 'Taxonomy Name'],
+                        ];
+                        break;
+                    case 'image':
+                    case 'file':
+                        $field_data['properties'] = [
+                            ['name' => 'url', 'label' => 'URL'],
+                            ['name' => 'alt', 'label' => 'Alt Text'],
+                            ['name' => 'title', 'label' => 'Title'],
+                            ['name' => 'ID', 'label' => 'Attachment ID'],
+                        ];
+                        break;
+                    case 'post_object':
+                    case 'page_link':
+                        $field_data['properties'] = [
+                            ['name' => 'ID', 'label' => 'Post ID'],
+                            ['name' => 'post_title', 'label' => 'Post Title'],
+                            ['name' => 'permalink', 'label' => 'Permalink (using get_permalink)'],
+                        ];
+                        break;
+                    case 'user':
+                         $field_data['properties'] = [
+                            ['name' => 'ID', 'label' => 'User ID'],
+                            ['name' => 'display_name', 'label' => 'Display Name'],
+                            ['name' => 'user_email', 'label' => 'User Email'],
+                        ];
+                        break;
+                    case 'icon_picker': 
+                        $field_data['properties'] = [
+                            ['name' => 'class', 'label' => 'Icon CSS Class (e.g., \'fas fa-home\')'],
+                            ['name' => 'url', 'label' => 'Icon URL (for SVG/image icons)'],
+                            ['name' => 'type', 'label' => 'Icon Type (e.g., \'dashicon\', \'url\')'],
+                        ];
+                        break;
                 }
                 
                 $dictionary['acf'][] = $field_data;
             }
         }
+        
+        // Add sub-fields for repeater context (static for now, can be dynamic later)
+        $dictionary['sub'] = [
+            ['name' => 'sub_field_name', 'label' => 'Repeater Sub Field']
+        ];
 
         wp_send_json_success($dictionary);
     }
+    
 }

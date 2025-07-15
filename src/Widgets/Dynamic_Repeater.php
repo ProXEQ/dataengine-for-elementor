@@ -98,10 +98,30 @@ class Dynamic_Repeater extends Widget_Base
         $this->end_controls_section();
     }
 
+    public function add_svg_support_for_kses( $allowed_tags ) {
+        $allowed_tags['svg'] = [
+            'xmlns'   => true,
+            'width'   => true,
+            'height'  => true,
+            'viewbox' => true,
+            'class'   => true,
+            'fill'    => true,
+        ];
+        $allowed_tags['path'] = [
+            'd'    => true,
+            'fill' => true,
+        ];
+        $allowed_tags['g'] = [
+            'fill' => true,
+        ];
+        return $allowed_tags;
+    }
+
     protected function render(): void {
         $cache_manager = Plugin::instance()->cache_manager;
-
-        if ( $cache_manager->is_enabled() ) {
+        
+        // Caching should be disabled in the editor to see live changes.
+        if ( $cache_manager->is_enabled() && ! \Elementor\Plugin::$instance->editor->is_edit_mode() ) {
             $cache_key = $cache_manager->generate_key( $this );
             $cached_html = $cache_manager->get( $cache_key );
             if ( false !== $cached_html ) {
@@ -113,12 +133,20 @@ class Dynamic_Repeater extends Widget_Base
         ob_start();
         $settings = $this->get_settings_for_display();
         $repeater_field_name = $settings['repeater_field_name'];
-
+        
+        // NEW: Reliably get the current post ID, works in frontend and editor.
+        $post_id = get_the_ID();
+        
         if ( empty( $repeater_field_name ) ) {
+            ob_end_clean(); // Clean buffer if we exit early
             return;
         }
         
-        $repeater_data = get_field( $repeater_field_name );
+        // MODIFIED: Explicitly pass the $post_id to get_field().
+        // This is the core of the fix for the Elementor editor preview.
+        $repeater_data = get_field( $repeater_field_name, $post_id );
+        
+        add_filter('wp_kses_allowed_html', [ $this, 'add_svg_support_for_kses' ]);
         $parser = $this->get_parser();
 
         if ( ! empty( $repeater_data ) && is_array( $repeater_data ) ) {
@@ -126,21 +154,28 @@ class Dynamic_Repeater extends Widget_Base
             $html_parts = [];
             
             foreach ( $repeater_data as $row_data ) {
-                $html_parts[] = $parser->process_loop_item( $settings['item_template'], $row_data );
+                // MODIFIED: Pass the main $post_id to the loop item processor.
+                // This allows using tags like %acf:global_field% inside a loop item.
+                $html_parts[] = $parser->process_loop_item( $settings['item_template'], $row_data, $post_id );
             }
             
-            $header = $parser->process( $settings['header_template'] );
-            $footer = $parser->process( $settings['footer_template'] );
+            // MODIFIED: Pass the $post_id to header and footer templates.
+            $header = $parser->process( $settings['header_template'], $post_id );
+            $footer = $parser->process( $settings['footer_template'], $post_id );
             
             echo $header . implode( '', $html_parts ) . $footer;
-
+            
         } else {
-            // Handle the "no results" case.
-            echo $parser->process( $settings['no_results_template'] );
+            // MODIFIED: Pass the $post_id to the "no results" template.
+            echo $parser->process( $settings['no_results_template'], $post_id );
         }
+        
+        remove_filter('wp_kses_allowed_html', [ $this, 'add_svg_support_for_kses' ]);
+        
         $final_html = ob_get_clean();
         
-        if ( $cache_manager->is_enabled() && isset($cache_key) ) {
+        // Caching logic remains, but we also check if the key was set.
+        if ( $cache_manager->is_enabled() && ! \Elementor\Plugin::$instance->editor->is_edit_mode() && isset($cache_key) ) {
             $cache_manager->set( $cache_key, $final_html );
         }
 

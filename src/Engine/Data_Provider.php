@@ -26,7 +26,6 @@ class Data_Provider {
     public function get_value( string $source, string $field_name, ?int $post_id = null ): mixed {
         $post_id = $post_id ?? get_the_ID();
         
-        // --- NOWA LOGIKA CACHE ---
         $cache_key = "{$source}:{$post_id}:{$field_name}";
         
         if ( isset( $this->value_cache[ $cache_key ] ) ) {
@@ -35,7 +34,6 @@ class Data_Provider {
         }
         
         Logger::log( "Cache MISS for key: '{$cache_key}'. Fetching from source.", 'DEBUG' );
-        // --- KONIEC NOWEJ LOGIKI CACHE ---
 
         $value = null;
 
@@ -95,5 +93,20 @@ class Data_Provider {
         }
 
         return null;
+    }
+    public function get_all_post_fields_for_editor(): array {
+        return [
+            ['name' => 'ID', 'label' => 'Post ID'],
+            ['name' => 'post_title', 'label' => 'Post Title'],
+            ['name' => 'post_content', 'label' => 'Post Content'],
+            ['name' => 'post_excerpt', 'label' => 'Post Excerpt'],
+            ['name' => 'post_date', 'label' => 'Post Date'],
+            ['name' => 'post_modified', 'label' => 'Post Modified Date'],
+            ['name' => 'post_status', 'label' => 'Post Status'],
+            ['name' => 'post_name', 'label' => 'Post Slug'],
+            ['name' => 'post_author', 'label' => 'Post Author ID'],
+            ['name' => 'permalink', 'label' => 'Permalink'],
+            // You can add more fields here if needed
+        ];
     }
 }
