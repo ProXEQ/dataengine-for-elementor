@@ -156,45 +156,68 @@ class Parser
             $property = $path_parts[1] ?? null;
 
 
-            if ( $source === 'sub' && $loop_item_data !== null ) {
-                // Logic for repeater fields remains unchanged
-                $value = $this->resolve_path_from_array( $path_string, $loop_item_data );
+            if ($source === 'sub' && $loop_item_data !== null) {
+                $raw_value = $this->resolve_path_from_array($path_string, $loop_item_data);
+
+                // Check if this is a request for raw SVG content (no property requested)
+                if (!$property && is_array($raw_value)) {
+                    // Handle Icon Picker with media_library type
+                    $effective_value = $raw_value;
+                    if (isset($raw_value['type']) && $raw_value['type'] === 'media_library' && isset($raw_value['value'])) {
+                        $effective_value = $raw_value['value'];
+                    }
+
+                    // Check if this is an SVG file and inline its content
+                    if (is_array($effective_value) && isset($effective_value['mime_type']) && $effective_value['mime_type'] === 'image/svg+xml') {
+                        Logger::log("Rendering SVG content for sub-field: {$field_name}", 'DEBUG');
+                        $file_path = get_attached_file($effective_value['ID']);
+                        if ($file_path && file_exists($file_path)) {
+                            $value = file_get_contents($file_path);
+                            Logger::log("SVG content loaded from: {$file_path}", 'DEBUG');
+                        }
+                    } else {
+                        $value = $raw_value;
+                    }
+                } else {
+                    // For property requests or non-SVG fields, use the standard logic
+                    $value = $raw_value;
+                }
 
             } else {
                 // Logic for 'acf' and 'post' sources
-                $raw_value = $this->data_provider->get_value( $source, $field_name, $context_post_id );
+                $raw_value = $this->data_provider->get_value($source, $field_name, $context_post_id);
 
-                if ( $property ) {
+                if ($property) {
                     // A specific property is requested (e.g., .url, .class, .label)
-                    if ( $property === 'label' ) {
-                        $field_object = $this->data_provider->get_field_object( $field_name, $context_post_id );
+                    if ($property === 'label') {
+                        $field_object = $this->data_provider->get_field_object($field_name, $context_post_id);
                         $value = $field_object['label'] ?? '';
                     } else {
                         // Let traverse_path handle finding the specific property.
-                        $value = $this->traverse_path( $raw_value, [ $property ] );
+                        $value = $this->traverse_path($raw_value, [$property]);
                     }
                 } else {
                     // No property requested - we need to handle the raw value intelligently.
-                    
+
                     // First, "unwrap" the value to get the core data, which is crucial for the Icon Picker field.
                     $effective_value = $raw_value;
-                    if ( is_array( $effective_value ) && isset( $effective_value['type'] ) && $effective_value['type'] === 'media_library' && isset( $effective_value['value'] ) ) {
+                    if (is_array($effective_value) && isset($effective_value['type']) && $effective_value['type'] === 'media_library' && isset($effective_value['value'])) {
                         $effective_value = $effective_value['value'];
                     }
 
                     // Now, based on the effective value, decide what to render.
-                    
+
                     // Case 1: The effective value is an SVG image array. Inline its content.
-                    if ( is_array( $effective_value ) && isset( $effective_value['mime_type'] ) && $effective_value['mime_type'] === 'image/svg+xml' ) {
-                        Logger::log( "Rendering SVG content for field: {$field_name}", 'DEBUG' );
-                        $file_path = get_attached_file( $effective_value['ID'] );
-                        if ( $file_path && file_exists( $file_path ) ) {
-                            $value = file_get_contents( $file_path );
-                            Logger::log( "SVG content loaded from: {$file_path}", 'DEBUG' );
+                    if (is_array($effective_value) && isset($effective_value['mime_type']) && $effective_value['mime_type'] === 'image/svg+xml') {
+                        Logger::log("Rendering SVG content for field: {$field_name}", 'DEBUG');
+                        $file_path = get_attached_file($effective_value['ID']);
+                        if ($file_path && file_exists($file_path)) {
+                            $value = file_get_contents($file_path);
+                            Logger::log("SVG content loaded from: {$file_path}", 'DEBUG');
                         }
                     }
                     // Case 2: The raw value is a simple scalar type (string, number). It can be safely rendered.
-                    else if ( ! is_array( $raw_value ) && ! is_object( $raw_value ) ) {
+                    else if (!is_array($raw_value) && !is_object($raw_value)) {
                         $value = $raw_value;
                     }
                     // Case 3: The raw value is any other complex type (Image, File, Term object, etc.)

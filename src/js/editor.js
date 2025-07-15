@@ -1,13 +1,13 @@
 // src/js/editor.js
 
-import { EditorState, RangeSetBuilder } from '@codemirror/state';
-import { EditorView, keymap, Decoration, ViewPlugin } from "@codemirror/view";
+import { autocompletion, closeBrackets, completionKeymap, startCompletion } from '@codemirror/autocomplete';
 import { defaultKeymap, indentWithTab } from "@codemirror/commands";
-import { oneDark } from "@codemirror/theme-one-dark";
-import { autocompletion, completionKeymap, startCompletion, closeBrackets } from '@codemirror/autocomplete';
 import { html } from "@codemirror/lang-html";
+import { EditorState, RangeSetBuilder } from '@codemirror/state';
+import { oneDark } from "@codemirror/theme-one-dark";
+import { Decoration, EditorView, keymap, ViewPlugin } from "@codemirror/view";
 // NEW: Import the linter and lintGutter for error display
-import { linter, lintGutter, a } from '@codemirror/lint';
+import { linter, lintGutter } from '@codemirror/lint';
 
 jQuery(document).ready(function ($) {
     console.log("DataEngine: editor.bundle.js loaded successfully.");
@@ -17,7 +17,6 @@ jQuery(document).ready(function ($) {
      * 1. GRANULAR SYNTAX HIGHLIGHTING (UNCHANGED)
      * ========================================================================
      */
-    // ... (ta sekcja pozostaje bez zmian)
     const D = {
         delim: Decoration.mark({ class: 'cm-de-delim' }),
         source: Decoration.mark({ class: 'cm-de-source' }),
@@ -53,7 +52,6 @@ jQuery(document).ready(function ($) {
     });
 
     const dataEngineSyntaxHighlighting = ViewPlugin.fromClass(class {
-        // ... (ta klasa pozostaje bez zmian)
         constructor(view) {
             this.decorations = this.buildDecorations(view);
         }
@@ -420,8 +418,42 @@ jQuery(document).ready(function ($) {
         });
     }
 
+    function getRepeaterContextFromDOM($clickedButton) {
+        // Look for the repeater field name input in multiple ways
+        const selectors = [
+            'input[data-setting="repeater_field_name"]',
+            'input[name*="repeater_field_name"]',
+            '.data-engine-repeater-name-input input'
+        ];
+        
+        const containers = [
+            $clickedButton.closest('.elementor-panel-controls'),
+            $clickedButton.closest('.elementor-widget-controls'),
+            $clickedButton.closest('.elementor-panel'),
+            $('#elementor-panel')
+        ];
+        
+        for (let container of containers) {
+            if (container.length > 0) {
+                for (let selector of selectors) {
+                    const $input = container.find(selector);
+                    if ($input.length > 0) {
+                        const value = $input.val();
+                        if (value) {
+                            console.log(`DataEngine: Found repeater field name "${value}" using selector "${selector}" in container:`, container[0]);
+                            return value;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return null;
+    }
+
     const $panel = $("#elementor-panel");
     $panel.on('click', 'button.elementor-button[data-event="data-engine:launch-editor"]', function () {
+        const $clickedButton = $(this);
         const $textarea = $(this).closest(".elementor-control").prev(".elementor-control-type-textarea").find("textarea");
         if (!$textarea.length) {
             console.error('DataEngine Error: Could not find the target textarea.');
@@ -441,6 +473,11 @@ jQuery(document).ready(function ($) {
             ajaxData.preview_id = editorConfig.preview.id;
         } else {
             ajaxData.post_id = editorConfig.id;
+        }
+
+        const $repeaterNameInput = $clickedButton.closest('#elementor-controls').find('.data-engine-repeater-name-input input');
+        if ($repeaterNameInput.length > 0 && $repeaterNameInput.val()) {
+            ajaxData.repeater_context_field = $repeaterNameInput.val();
         }
 
         $.ajax({
