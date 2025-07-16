@@ -159,7 +159,6 @@ class Parser
             $field_name = $path_parts[0];
             $property = $path_parts[1] ?? null;
 
-
             if ($source === 'sub' && $loop_item_data !== null) {
                 $raw_value = $this->resolve_path_from_array($path_string, $loop_item_data);
 
@@ -229,16 +228,19 @@ class Parser
                     elseif (is_array($raw_value) && $this->is_taxonomy_array($raw_value)) {
                         $value = $this->process_taxonomy_array_with_context($raw_value, null, $field_name);
                     }
-
                     // --- NEW: Case 3: Handle single taxonomy object without properties ---
                     elseif (is_object($raw_value) && $raw_value instanceof \WP_Term) {
                         $value = $raw_value->name; // Default to name for single taxonomy
                     }
-                    // Case 4: The raw value is a simple scalar type (string, number). It can be safely rendered.
+                    // --- NEW: Case 4: Handle multi-value fields (checkbox, select multiple) ---
+                    elseif (is_array($raw_value) && $this->is_multi_value_field($raw_value)) {
+                        $value = $this->process_multi_value_field($raw_value, $field_name);
+                    }
+                    // Case 5: The raw value is a simple scalar type (string, number). It can be safely rendered.
                     elseif (!is_array($raw_value) && !is_object($raw_value)) {
                         $value = $raw_value;
                     }
-                    // Case 5: The raw value is any other complex type (Image, File, etc.)
+                    // Case 6: The raw value is any other complex type (Image, File, etc.)
                     // for which no specific property was requested. We return an empty string to prevent errors.
                     else {
                         $value = '';
@@ -246,18 +248,100 @@ class Parser
                 }
             }
 
-
+            // --- NEW: Enhanced filter handling for array values ---
             if (!empty($filters_string)) {
-                if (is_array($value) || is_object($value))
+                // Handle filters for array values
+                if (is_array($value)) {
+                    // For arrays, we need to process them first, then apply filters
+                    $filtered_values = array_filter($value, function($item) {
+                        return !empty($item) && $item !== null && $item !== '';
+                    });
+                    
+                    if (!empty($filtered_values)) {
+                        $string_value = implode(', ', $filtered_values);
+                        $filters = $this->parse_filters($filters_string);
+                        $value = Filters::apply($string_value, $filters);
+                    } else {
+                        $value = '';
+                    }
+                } else if (!is_object($value)) {
+                    $filters = $this->parse_filters($filters_string);
+                    $value = Filters::apply($value, $filters);
+                } else {
                     return '';
-                $filters = $this->parse_filters($filters_string);
-                $value = Filters::apply($value, $filters);
+                }
             }
 
-            if (is_array($value) || is_object($value))
+            // --- ENHANCED: Final value processing ---
+            if (is_array($value)) {
+                // Handle remaining arrays (multi-value fields)
+                if ($this->is_multi_value_field($value)) {
+                    return $this->process_multi_value_field($value, $field_name);
+                }
+                // Return empty for other arrays
                 return '';
+            }
+
+            if (is_object($value)) {
+                return '';
+            }
+
             return (string) $value;
         }, $content);
+    }
+
+    /**
+     * Check if an array represents a multi-value field (checkbox, select multiple)
+     * 
+     * @param array $value The array to check
+     * @return bool True if it's a multi-value field
+     */
+    private function is_multi_value_field(array $value): bool
+    {
+        // Empty arrays are not multi-value fields
+        if (empty($value)) {
+            return false;
+        }
+
+        // Check if it's a simple array of scalar values (typical for checkbox/select multiple)
+        foreach ($value as $item) {
+            if (!is_scalar($item) && !is_null($item)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Process multi-value field arrays (checkbox, select multiple) into displayable strings
+     * 
+     * @param array $value The multi-value field array
+     * @param string $field_name The field name for logging
+     * @return string Processed string value
+     */
+    private function process_multi_value_field(array $value, string $field_name): string
+    {
+        // Filter out empty values
+        $filtered_values = array_filter($value, function ($item) {
+            return !empty($item) && $item !== null && $item !== '';
+        });
+
+        if (empty($filtered_values)) {
+            Logger::log("Multi-value field '{$field_name}' has no valid values", 'DEBUG');
+            return '';
+        }
+
+        // Convert all values to strings and join with comma
+        $string_values = array_map(function ($item) {
+            return (string) $item;
+        }, $filtered_values);
+
+        $result = implode(', ', $string_values);
+
+        Logger::log("Multi-value field '{$field_name}' processed: " . count($filtered_values) . " values", 'DEBUG');
+
+        return $result;
     }
 
     /**
@@ -279,19 +363,19 @@ class Parser
      * Helper to resolve dot notation paths from a simple array (the repeater row data).
      */
     private function resolve_path_from_array(string $path_string, array $data): mixed
-{
-    $path_parts = explode('.', $path_string);
-    $field_name = array_shift($path_parts);
-    $value = $data[$field_name] ?? null;
-    
-    // Handle taxonomy arrays in sub-fields
-    if (is_array($value) && $this->is_taxonomy_array($value)) {
-        $property = $path_parts[0] ?? null;
-        return $this->process_taxonomy_array_with_context($value, $property, "sub_{$field_name}");
+    {
+        $path_parts = explode('.', $path_string);
+        $field_name = array_shift($path_parts);
+        $value = $data[$field_name] ?? null;
+
+        // Handle taxonomy arrays in sub-fields
+        if (is_array($value) && $this->is_taxonomy_array($value)) {
+            $property = $path_parts[0] ?? null;
+            return $this->process_taxonomy_array_with_context($value, $property, "sub_{$field_name}");
+        }
+
+        return $this->traverse_path($value, $path_parts);
     }
-    
-    return $this->traverse_path($value, $path_parts);
-}
 
     /**
      * A generic helper to traverse a path on a given value (array or object).
@@ -356,7 +440,6 @@ class Parser
         return reset($array) instanceof \WP_Term;
     }
 
-
     private array $taxonomy_context = [];
 
     private function process_taxonomy_array_with_context(array $terms, ?string $property = null, string $field_name = ''): string
@@ -387,10 +470,12 @@ class Parser
 
         return implode(', ', $values);
     }
+    
     private function clear_taxonomy_context(): void
     {
         $this->taxonomy_context = [];
     }
+    
     public function get_taxonomy_context(string $field_name): array
     {
         return $this->taxonomy_context[$field_name] ?? [];

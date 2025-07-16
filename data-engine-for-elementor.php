@@ -3,7 +3,7 @@
  * Plugin Name:       DataEngine For Elementor
  * Plugin URI:        https://pixelmobs.com/project/data-engine-for-elementor
  * Description:       A developer-focused data engine to bridge Elementor with advanced custom fields.
- * Version:           1.1.2
+ * Version:           1.1.3
  * Author:            PixelMobs
  * Author URI:        https://pixelmobs.com
  * License:           GPL-2.0-or-later

@@ -191,4 +191,56 @@ class Filters
 
         return implode(', ', $filtered);
     }
+    private static function filter_join($value, string $separator = ', '): string
+{
+    if (is_array($value)) {
+        $filtered = array_filter($value, function($item) {
+            return !empty($item) && $item !== null && $item !== '';
+        });
+        return implode($separator, $filtered);
+    }
+    return (string) $value;
+}
+
+/**
+ * Count number of selected values
+ */
+private static function filter_count($value): string
+{
+    if (is_array($value)) {
+        $filtered = array_filter($value, function($item) {
+            return !empty($item) && $item !== null && $item !== '';
+        });
+        return (string) count($filtered);
+    }
+    return is_empty($value) ? '0' : '1';
+}
+
+/**
+ * Get first value from array
+ */
+private static function filter_first($value): string
+{
+    if (is_array($value)) {
+        $filtered = array_filter($value, function($item) {
+            return !empty($item) && $item !== null && $item !== '';
+        });
+        return !empty($filtered) ? (string) reset($filtered) : '';
+    }
+    return (string) $value;
+}
+
+/**
+ * Get last value from array
+ */
+private static function filter_last($value): string
+{
+    if (is_array($value)) {
+        $filtered = array_filter($value, function($item) {
+            return !empty($item) && $item !== null && $item !== '';
+        });
+        return !empty($filtered) ? (string) end($filtered) : '';
+    }
+    return (string) $value;
+}
 }
