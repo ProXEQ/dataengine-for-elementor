@@ -40,6 +40,8 @@ class Data_Provider {
         switch ( $source ) {
             case 'acf':
                 $value = get_field( $field_name, $post_id );
+                Logger::log( "Fetching ACF field '{$field_name}' for post ID {$post_id}.", 'DEBUG' );
+                Logger::log( "ACF field value: " . print_r( $value, true ), 'DEBUG' );
                 break;
 
             case 'post':
@@ -65,6 +67,7 @@ class Data_Provider {
     public function get_field_object( string $field_name, ?int $post_id = null ): ?array {
         $post_id = $post_id ?? get_the_ID();
         $field_object = get_field_object( $field_name, $post_id );
+        Logger::log( "Fetching field object for '{$field_name}' in post ID {$post_id}.", 'DEBUG' );
         return $field_object ?: null;
     }
 
@@ -106,7 +109,24 @@ class Data_Provider {
             ['name' => 'post_name', 'label' => 'Post Slug'],
             ['name' => 'post_author', 'label' => 'Post Author ID'],
             ['name' => 'permalink', 'label' => 'Permalink'],
-            // You can add more fields here if needed
         ];
     }
+    public function get_current_context_post_id(): int {
+    $post_id = get_the_ID();
+    
+    // If we're in preview mode, try to get the preview post ID
+    if (is_preview()) {
+        $preview_id = get_query_var('preview_id');
+        if ($preview_id) {
+            $post_id = absint($preview_id);
+        }
+    }
+    
+    // If we're in admin/editor context, try to get from URL parameters
+    if (is_admin() && isset($_GET['post'])) {
+        $post_id = absint($_GET['post']);
+    }
+    
+    return $post_id ?: 0;
+}
 }

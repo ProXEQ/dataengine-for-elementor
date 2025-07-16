@@ -162,27 +162,80 @@ final class Plugin
     {
         check_ajax_referer('data-engine-editor-nonce', 'nonce');
 
-        // --- Start of Debugging ---
         \DataEngine\Utils\Logger::log('--- AJAX Request for Data Dictionary Received ---');
         \DataEngine\Utils\Logger::log('POST Data Received: ' . print_r($_POST, true));
-        // --- End of Debugging ---
 
-        $post_id = !empty($_POST['preview_id']) ? absint($_POST['preview_id']) : (!empty($_POST['post_id']) ? absint($_POST['post_id']) : 0);
+        // --- NEW: Use the same context as %post:ID% ---
+        $post_id = 0;
+
+        // Priority 1: Use context_post_id (matches %post:ID% logic)
+        if (!empty($_POST['context_post_id'])) {
+            $post_id = absint($_POST['context_post_id']);
+            \DataEngine\Utils\Logger::log('Using context_post_id (matches %post:ID%): ' . $post_id);
+        }
+        // Priority 2: Traditional fallbacks
+        elseif (!empty($_POST['preview_id'])) {
+            $post_id = absint($_POST['preview_id']);
+            \DataEngine\Utils\Logger::log('Using preview_id fallback: ' . $post_id);
+        } elseif (!empty($_POST['post_id'])) {
+            $post_id = absint($_POST['post_id']);
+            \DataEngine\Utils\Logger::log('Using post_id fallback: ' . $post_id);
+        }
+
         if (!$post_id) {
             wp_send_json_error(['message' => 'Could not determine context.']);
             return;
         }
+
+        // Log context information for debugging
+        $template_id = !empty($_POST['template_id']) ? absint($_POST['template_id']) : 0;
+        $is_preview = !empty($_POST['is_preview']) ? 'true' : 'false';
+        \DataEngine\Utils\Logger::log("Context - Post ID: {$post_id}, Template ID: {$template_id}, Is Preview: {$is_preview}");
 
         $repeater_context_field = isset($_POST['repeater_context_field']) ? sanitize_text_field($_POST['repeater_context_field']) : null;
 
         $dictionary = [
             'post' => $this->data_provider->get_all_post_fields_for_editor(),
             'acf' => [],
-            'sub' => []
+            'sub' => [],
+            'filters' => $this->get_available_filters()
         ];
 
-        // --- 1. Populate the 'acf' dictionary (unchanged logic) ---
+        // Get ACF fields for the resolved post
         $fields = get_field_objects($post_id);
+        \DataEngine\Utils\Logger::log('ACF fields found for post ' . $post_id . ': ' . count($fields));
+
+        // If no fields found, try fallback methods
+        if (empty($fields)) {
+            \DataEngine\Utils\Logger::log('No fields found for post ID: ' . $post_id . '. Trying fallback methods...');
+
+            // Fallback 1: Get all available field groups
+            $field_groups = acf_get_field_groups();
+
+            if ($field_groups) {
+                foreach ($field_groups as $group) {
+                    $group_fields = acf_get_fields($group['key']);
+
+                    if ($group_fields) {
+                        foreach ($group_fields as $field) {
+                            $fields[$field['name']] = [
+                                'name' => $field['name'],
+                                'label' => $field['label'],
+                                'type' => $field['type'],
+                                'key' => $field['key']
+                            ];
+
+                            if ($field['type'] === 'repeater' && !empty($field['sub_fields'])) {
+                                $fields[$field['name']]['sub_fields'] = $field['sub_fields'];
+                            }
+                        }
+                    }
+                }
+                \DataEngine\Utils\Logger::log('Found ' . count($fields) . ' fields using fallback method.');
+            }
+        }
+
+        // Process fields
         if ($fields) {
             foreach ($fields as $field) {
                 if ($field['type'] === 'repeater')
@@ -196,7 +249,6 @@ final class Plugin
                 ];
 
                 switch ($field['type']) {
-                    // ... all cases for properties remain the same
                     case 'taxonomy':
                         $field_data['properties'] = [
                             ['name' => 'term_id', 'label' => 'Term ID'],
@@ -241,12 +293,15 @@ final class Plugin
             }
         }
 
-        // --- 2. Populate the 'sub' dictionary with extensive debugging ---
-        \DataEngine\Utils\Logger::log("Checking for repeater context. Field name received: '" . ($repeater_context_field ?? 'None') . "'");
-
-        // --- NEW: Dynamic 'sub' dictionary based on repeater context ---
+        // Handle repeater context
         if ($repeater_context_field) {
-            $repeater_field_object = get_field_object($repeater_context_field, $post_id);
+            $repeater_field_object = null;
+
+            if (isset($fields[$repeater_context_field])) {
+                $repeater_field_object = $fields[$repeater_context_field];
+            } else {
+                $repeater_field_object = acf_get_field($repeater_context_field);
+            }
 
             if ($repeater_field_object && $repeater_field_object['type'] === 'repeater' && !empty($repeater_field_object['sub_fields'])) {
                 foreach ($repeater_field_object['sub_fields'] as $sub_field) {
@@ -257,7 +312,6 @@ final class Plugin
                         'properties' => []
                     ];
 
-                    // Apply the same property logic as for global ACF fields
                     switch ($sub_field['type']) {
                         case 'taxonomy':
                             $sub_field_data['properties'] = [
@@ -305,15 +359,96 @@ final class Plugin
             }
         }
 
-        // If no repeater context, provide a fallback
         if (empty($dictionary['sub'])) {
             $dictionary['sub'] = [
                 ['name' => 'sub_field_name', 'label' => 'Repeater Sub Field (Context Required)']
             ];
         }
 
+        \DataEngine\Utils\Logger::log('Final dictionary counts - ACF: ' . count($dictionary['acf']) . ', SUB: ' . count($dictionary['sub']));
         \DataEngine\Utils\Logger::log('--- AJAX Request Finished ---');
         wp_send_json_success($dictionary);
+    }
+
+    private function get_available_filters(): array
+    {
+        return [
+            [
+                'name' => 'uppercase',
+                'label' => 'Convert to uppercase',
+                'description' => 'Converts text to uppercase letters',
+                'args' => []
+            ],
+            [
+                'name' => 'lowercase',
+                'label' => 'Convert to lowercase',
+                'description' => 'Converts text to lowercase letters',
+                'args' => []
+            ],
+            [
+                'name' => 'truncate',
+                'label' => 'Truncate text',
+                'description' => 'Limits text to specified length',
+                'args' => [
+                    ['name' => 'length', 'type' => 'number', 'default' => 100]
+                ]
+            ],
+            [
+                'name' => 'date_format',
+                'label' => 'Format date',
+                'description' => 'Formats date according to PHP date format',
+                'args' => [
+                    ['name' => 'format', 'type' => 'string', 'default' => 'Y-m-d']
+                ]
+            ],
+            [
+                'name' => 'strip_tags',
+                'label' => 'Strip HTML tags',
+                'description' => 'Removes HTML tags from text',
+                'args' => []
+            ],
+            [
+                'name' => 'limit',
+                'label' => 'Limit terms',
+                'description' => 'limits the number of terms in taxonomy displayed',
+                'args' => [
+                    ['name' => 'limit', 'type' => 'number', 'default' => 10]
+                ]
+            ],
+            [
+                'name' => 'exclude',
+                'label' => 'Exclude terms',
+                'description' => 'excludes specific terms by IDs',
+                'args' => [
+                    ['name' => 'ids', 'type' => 'string', 'default' => '']
+                ]
+            ],
+            [
+                'name' => 'separator',
+                'label' => 'Change separator',
+                'description' => 'changes the separator between terms',
+                'args' => [
+                    ['name' => 'separator', 'type' => 'string', 'default' => '" / "']
+                ]
+            ],
+            [
+                'name' => 'wrap',
+                'label' => 'Wrap text',
+                'description' => 'wraps text in specified HTML tags',
+                'args' => [
+                    ['name' => 'prefix', 'type' => 'string', 'default' => '<span>'],
+                    ['name' => 'suffix', 'type' => 'string', 'default' => '</span>']
+                ]
+            ],
+            [
+                'name' => 'sort',
+                'label' => 'Sort terms',
+                'description' => 'sorts taxonomy terms by specified property',
+                'args' => [
+                    ['name' => 'sort by', 'type' => 'string', 'default' => 'name']
+                ]
+            ]
+        ];
     }
 
 }

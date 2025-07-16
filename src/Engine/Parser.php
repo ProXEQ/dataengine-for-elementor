@@ -48,10 +48,14 @@ class Parser
      */
     private function process_content(string $content, ?int $context_post_id, ?array $loop_item_data): string
     {
+        // Clear taxonomy context at the beginning of each content processing
+        $this->clear_taxonomy_context();
+
         // The order is critical: process structures first, then simple tags.
         $content = $this->process_conditionals($content, $context_post_id, $loop_item_data);
         $content = $this->process_fallbacks($content, $context_post_id, $loop_item_data);
         $content = $this->process_tags($content, $context_post_id, $loop_item_data);
+
         return $content;
     }
 
@@ -193,8 +197,13 @@ class Parser
                         $field_object = $this->data_provider->get_field_object($field_name, $context_post_id);
                         $value = $field_object['label'] ?? '';
                     } else {
-                        // Let traverse_path handle finding the specific property.
-                        $value = $this->traverse_path($raw_value, [$property]);
+                        // --- FIXED: Handle taxonomy arrays with properties consistently ---
+                        if (is_array($raw_value) && $this->is_taxonomy_array($raw_value)) {
+                            $value = $this->process_taxonomy_array_with_context($raw_value, $property, $field_name);
+                        } else {
+                            // Let traverse_path handle finding the specific property.
+                            $value = $this->traverse_path($raw_value, [$property]);
+                        }
                     }
                 } else {
                     // No property requested - we need to handle the raw value intelligently.
@@ -216,11 +225,20 @@ class Parser
                             Logger::log("SVG content loaded from: {$file_path}", 'DEBUG');
                         }
                     }
-                    // Case 2: The raw value is a simple scalar type (string, number). It can be safely rendered.
-                    else if (!is_array($raw_value) && !is_object($raw_value)) {
+                    // --- NEW: Case 2: Handle taxonomy arrays without properties ---
+                    elseif (is_array($raw_value) && $this->is_taxonomy_array($raw_value)) {
+                        $value = $this->process_taxonomy_array_with_context($raw_value, null, $field_name);
+                    }
+
+                    // --- NEW: Case 3: Handle single taxonomy object without properties ---
+                    elseif (is_object($raw_value) && $raw_value instanceof \WP_Term) {
+                        $value = $raw_value->name; // Default to name for single taxonomy
+                    }
+                    // Case 4: The raw value is a simple scalar type (string, number). It can be safely rendered.
+                    elseif (!is_array($raw_value) && !is_object($raw_value)) {
                         $value = $raw_value;
                     }
-                    // Case 3: The raw value is any other complex type (Image, File, Term object, etc.)
+                    // Case 5: The raw value is any other complex type (Image, File, etc.)
                     // for which no specific property was requested. We return an empty string to prevent errors.
                     else {
                         $value = '';
@@ -261,12 +279,19 @@ class Parser
      * Helper to resolve dot notation paths from a simple array (the repeater row data).
      */
     private function resolve_path_from_array(string $path_string, array $data): mixed
-    {
-        $path_parts = explode('.', $path_string);
-        $field_name = array_shift($path_parts);
-        $value = $data[$field_name] ?? null;
-        return $this->traverse_path($value, $path_parts);
+{
+    $path_parts = explode('.', $path_string);
+    $field_name = array_shift($path_parts);
+    $value = $data[$field_name] ?? null;
+    
+    // Handle taxonomy arrays in sub-fields
+    if (is_array($value) && $this->is_taxonomy_array($value)) {
+        $property = $path_parts[0] ?? null;
+        return $this->process_taxonomy_array_with_context($value, $property, "sub_{$field_name}");
     }
+    
+    return $this->traverse_path($value, $path_parts);
+}
 
     /**
      * A generic helper to traverse a path on a given value (array or object).
@@ -319,5 +344,55 @@ class Parser
     {
         // We reuse the private evaluate_condition method, passing null for the loop context.
         return $this->evaluate_condition($condition_string, $context_post_id, null);
+    }
+
+    private function is_taxonomy_array(array $array): bool
+    {
+        if (empty($array)) {
+            return false;
+        }
+
+        // Check if first element is WP_Term
+        return reset($array) instanceof \WP_Term;
+    }
+
+
+    private array $taxonomy_context = [];
+
+    private function process_taxonomy_array_with_context(array $terms, ?string $property = null, string $field_name = ''): string
+    {
+        if (empty($terms)) {
+            return '';
+        }
+
+        // Store context for potential use in filters
+        $this->taxonomy_context[$field_name] = $terms;
+
+        $values = [];
+
+        foreach ($terms as $term) {
+            if (!($term instanceof \WP_Term)) {
+                continue;
+            }
+
+            if ($property === null) {
+                $values[] = $term->name;
+            } elseif (property_exists($term, $property)) {
+                $values[] = $term->{$property};
+            } else {
+                // Property doesn't exist, skip this term
+                continue;
+            }
+        }
+
+        return implode(', ', $values);
+    }
+    private function clear_taxonomy_context(): void
+    {
+        $this->taxonomy_context = [];
+    }
+    public function get_taxonomy_context(string $field_name): array
+    {
+        return $this->taxonomy_context[$field_name] ?? [];
     }
 }
