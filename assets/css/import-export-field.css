@@ -1,0 +1,917 @@
+/*
+ * DataEngine Import/Export Field Styles
+ * 
+ * Simple, clean design that integrates seamlessly with ACF and WordPress admin
+ */
+
+/* ==========================================================================
+   Main Container - WordPress Native Style
+   ========================================================================== */
+
+.acf-import-export-controls {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    padding: 15px;
+    margin: 10px 0;
+}
+
+/* .acf-import-export-controls.has-existing-data {
+    border-left: 4px solid #ffb900;
+} */
+
+/* ==========================================================================
+   Section Headers - ACF Style
+   ========================================================================== */
+
+.acf-import-export-controls h4 {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #23282d;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.acf-import-export-controls h4 .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #666;
+}
+
+.import-section h4 .dashicons {
+    color: #00a32a;
+}
+
+.export-section h4 .dashicons {
+    color: #0073aa;
+}
+
+/* ==========================================================================
+   Import Section
+   ========================================================================== */
+
+.import-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.import-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.import-controls {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.import-file-input {
+    flex: 1;
+    min-width: 250px;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 13px;
+    background: #fff;
+}
+
+.import-file-input:focus {
+    border-color: #0073aa;
+    outline: none;
+    box-shadow: 0 0 0 1px #0073aa;
+}
+
+.import-buttons {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.import-buttons .button {
+    font-size: 13px;
+    padding: 4px 8px;
+    height: 28px;
+    line-height: 1.4;
+    border-radius: 3px;
+}
+
+.import-buttons .button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* File Type Indicators - Subtle WordPress Colors */
+.acf-import-export-controls.csv-file .import-preview-btn {
+    background: #00a32a;
+    border-color: #00a32a;
+    color: white;
+}
+
+.acf-import-export-controls.json-file .import-preview-btn {
+    background: #0073aa;
+    border-color: #0073aa;
+    color: white;
+}
+
+/* ==========================================================================
+   Export Section
+   ========================================================================== */
+
+.export-section {
+    margin-bottom: 0;
+}
+
+.export-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.export-buttons .button {
+    font-size: 13px;
+    padding: 4px 8px;
+    height: 28px;
+    line-height: 1.4;
+    border-radius: 3px;
+}
+
+/* ==========================================================================
+   File Info Display - WordPress Card Style
+   ========================================================================== */
+
+.de-file-info {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: #f7f7f7;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 13px;
+}
+
+.de-file-details {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.de-file-name {
+    font-weight: 500;
+    color: #23282d;
+    flex: 1;
+}
+
+.de-file-size {
+    color: #666;
+    font-size: 12px;
+}
+
+.de-file-remove {
+    background: none;
+    border: none;
+    color: #dc3232;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.de-file-remove:hover {
+    background: #dc3232;
+    color: #fff;
+}
+
+/* ==========================================================================
+   Custom File Input - WordPress Style
+   ========================================================================== */
+
+.import-file-input {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+    cursor: pointer;
+    border: 2px dashed #ddd;
+    border-radius: 3px;
+    background: #fafafa;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.2s ease;
+    width: 100%;
+    min-height: 60px;
+    box-sizing: border-box;
+}
+
+.import-file-input:hover {
+    border-color: #0073aa;
+    background: #f0f6fc;
+}
+
+.import-file-input.dragover {
+    border-color: #00a32a;
+    background: #f0f9f4;
+    transform: scale(1.02);
+}
+
+/* Hide the actual file input */
+.import-file-input input[type="file"] {
+    position: absolute;
+    left: -9999px;
+    opacity: 0;
+}
+
+/* Custom file input label */
+.de-file-input-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: #666;
+    font-size: 13px;
+}
+
+.de-file-input-icon {
+    font-size: 24px;
+    color: #0073aa;
+}
+
+.de-file-input-text {
+    font-weight: 500;
+    color: #23282d;
+}
+
+.de-file-input-hint {
+    font-size: 12px;
+    color: #999;
+}
+
+/* When file is selected */
+.import-file-input.has-file {
+    border-style: solid;
+    border-color: #0073aa;
+    background: #f0f6fc;
+}
+
+.import-file-input.has-file .de-file-input-icon {
+    color: #00a32a;
+}
+
+/* ==========================================================================
+   Enhanced Import Controls Layout
+   ========================================================================== */
+
+.import-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.import-file-wrapper {
+    position: relative;
+}
+
+/* ==========================================================================
+   Styled Import Buttons
+   ========================================================================== */
+
+.import-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.import-buttons .button {
+    font-size: 13px;
+    padding: 8px 16px;
+    height: auto;
+    line-height: 1.4;
+    border-radius: 3px;
+    font-weight: 500;
+    min-width: 100px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #23282d;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.import-buttons .button:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.import-buttons .button:hover:before {
+    left: 100%;
+}
+
+.import-buttons .button:hover {
+    border-color: #0073aa;
+    color: #0073aa;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.import-buttons .button.button-primary {
+    background: #0073aa;
+    border-color: #0073aa;
+    color: #fff;
+}
+
+.import-buttons .button.button-primary:hover {
+    background: #005a87;
+    border-color: #005a87;
+    color: #fff;
+}
+
+.import-buttons .button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.import-buttons .button:disabled:hover {
+    border-color: #ddd;
+    color: #23282d;
+}
+
+/* File Type Specific Styling */
+.acf-import-export-controls.csv-file .import-preview-btn {
+    background: #00a32a;
+    border-color: #00a32a;
+    color: white;
+}
+
+.acf-import-export-controls.csv-file .import-preview-btn:hover {
+    background: #008a20;
+    border-color: #008a20;
+}
+
+.acf-import-export-controls.json-file .import-preview-btn {
+    background: #0073aa;
+    border-color: #0073aa;
+    color: white;
+}
+
+.acf-import-export-controls.json-file .import-preview-btn:hover {
+    background: #005a87;
+    border-color: #005a87;
+}
+
+/* ==========================================================================
+   Enhanced File Info Display
+   ========================================================================== */
+
+.de-file-info {
+    margin-top: 12px;
+    padding: 12px;
+    background: #fff;
+    border: 1px solid #0073aa;
+    border-radius: 3px;
+    font-size: 13px;
+    box-shadow: 0 1px 3px rgba(0,115,170,0.1);
+}
+
+.de-file-details {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.de-file-icon {
+    width: 32px;
+    height: 32px;
+    background: #0073aa;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.de-file-icon.csv {
+    background: #00a32a;
+}
+
+.de-file-icon.json {
+    background: #0073aa;
+}
+
+.de-file-meta {
+    flex: 1;
+}
+
+.de-file-name {
+    font-weight: 600;
+    color: #23282d;
+    margin-bottom: 2px;
+}
+
+.de-file-size {
+    color: #666;
+    font-size: 12px;
+}
+
+.de-file-remove {
+    background: #fff;
+    border: 1px solid #dc3232;
+    color: #dc3232;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.de-file-remove:hover {
+    background: #dc3232;
+    color: #fff;
+    transform: scale(1.05);
+}
+
+
+/* ==========================================================================
+   Existing Data Notice - WordPress Admin Notice Style
+   ========================================================================== */
+
+.de-existing-data-notice {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 3px;
+    padding: 6px 10px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: #856404;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.de-existing-data-notice .dashicons {
+    color: #f39c12;
+    font-size: 16px;
+}
+
+/* ==========================================================================
+   Progress Indicator - Simple Overlay
+   ========================================================================== */
+
+.de-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    z-index: 10;
+}
+
+.de-progress-bar {
+    width: 150px;
+    height: 3px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.de-progress-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: #0073aa;
+    animation: de-progress-animation 2s infinite;
+}
+
+@keyframes de-progress-animation {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+.de-progress-message {
+    font-size: 13px;
+    color: #23282d;
+    font-weight: normal;
+}
+
+/* ==========================================================================
+   Notifications - WordPress Admin Notice Style
+   ========================================================================== */
+
+.de-notification {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.de-notification-success {
+    border-left: 4px solid #00a32a;
+    background: #f0f9ff;
+}
+
+.de-notification-error {
+    border-left: 4px solid #dc3232;
+    background: #fef7f7;
+}
+
+.de-notification-icon {
+    font-size: 14px;
+    font-weight: bold;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.de-notification-success .de-notification-icon {
+    background: #00a32a;
+    color: #fff;
+}
+
+.de-notification-error .de-notification-icon {
+    background: #dc3232;
+    color: #fff;
+}
+
+.de-notification-message {
+    flex: 1;
+    font-size: 13px;
+    color: #23282d;
+    line-height: 1.4;
+}
+
+.de-notification-close {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.de-notification-close:hover {
+    background: #f0f0f0;
+    color: #23282d;
+}
+
+/* ==========================================================================
+   Preview Modal - WordPress Modal Style
+   ========================================================================== */
+
+.import-preview {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    margin-top: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.13);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.de-preview-header {
+    padding: 10px 15px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f7f7f7;
+}
+
+.de-preview-header h4 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #23282d;
+}
+
+.de-preview-close {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.de-preview-close:hover {
+    background: #f0f0f0;
+    color: #23282d;
+}
+
+.de-preview-info {
+    padding: 10px 15px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #f9f9f9;
+}
+
+.de-preview-info p {
+    margin: 0 0 5px 0;
+    font-size: 13px;
+    color: #666;
+}
+
+.de-preview-info p:last-child {
+    margin-bottom: 0;
+}
+
+/* ==========================================================================
+   Preview Table - WordPress Table Style
+   ========================================================================== */
+
+.de-preview-table {
+    padding: 0;
+    overflow-x: auto;
+}
+
+.de-preview-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.de-preview-table th,
+.de-preview-table td {
+    padding: 6px 10px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.de-preview-table th {
+    background: #f7f7f7;
+    font-weight: 600;
+    color: #23282d;
+}
+
+.de-preview-table td {
+    color: #666;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.de-preview-table tr:hover {
+    background: #f9f9f9;
+}
+
+/* ==========================================================================
+   Field Mapping - Simple List
+   ========================================================================== */
+
+.de-preview-mapping {
+    padding: 10px 15px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #f9f9f9;
+}
+
+.de-preview-mapping h5 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #23282d;
+}
+
+.de-mapping-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.de-mapping-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    font-size: 12px;
+}
+
+.de-mapping-item.mapped {
+    border-left: 3px solid #00a32a;
+}
+
+.de-mapping-item.unmapped {
+    border-left: 3px solid #dc3232;
+}
+
+.de-mapping-header {
+    font-weight: 500;
+    color: #23282d;
+    min-width: 100px;
+    font-size: 12px;
+}
+
+.de-mapping-arrow {
+    color: #666;
+    font-weight: bold;
+}
+
+.de-mapping-field {
+    color: #666;
+    flex: 1;
+    font-size: 12px;
+}
+
+.de-mapping-item.unmapped .de-mapping-field {
+    color: #dc3232;
+    font-style: italic;
+}
+
+/* ==========================================================================
+   Preview Actions - WordPress Button Row
+   ========================================================================== */
+
+.de-preview-actions {
+    padding: 10px 15px;
+    background: #f7f7f7;
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.de-preview-actions .button {
+    font-size: 13px;
+    padding: 4px 12px;
+    height: 28px;
+    line-height: 1.4;
+    border-radius: 3px;
+}
+
+/* ==========================================================================
+   Overwrite Warning - WordPress Notice Style
+   ========================================================================== */
+
+.de-overwrite-warning {
+    padding: 15px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 3px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.de-warning-icon {
+    font-size: 20px;
+    color: #f39c12;
+    flex-shrink: 0;
+}
+
+.de-warning-content {
+    flex: 1;
+}
+
+.de-warning-content h4 {
+    margin: 0 0 6px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #856404;
+}
+
+.de-warning-content p {
+    margin: 0 0 6px 0;
+    font-size: 13px;
+    color: #856404;
+    line-height: 1.4;
+}
+
+.de-warning-actions {
+    margin-top: 10px;
+}
+
+.de-warning-actions label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #856404;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+.de-warning-actions input[type="checkbox"] {
+    margin: 0;
+}
+
+.de-warning-buttons {
+    display: flex;
+    gap: 6px;
+}
+
+.de-warning-buttons .button {
+    font-size: 13px;
+    padding: 4px 12px;
+    height: 28px;
+    line-height: 1.4;
+    border-radius: 3px;
+}
+
+/* ==========================================================================
+   Loading States - Simple WordPress Style
+   ========================================================================== */
+
+.de-preview-loading {
+    padding: 30px 15px;
+    text-align: center;
+    color: #666;
+}
+
+.de-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e0e0e0;
+    border-top: 2px solid #0073aa;
+    border-radius: 50%;
+    animation: de-spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+@keyframes de-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.de-preview-loading p {
+    margin: 0;
+    font-size: 13px;
+    color: #666;
+}
+
+/* ==========================================================================
+   Responsive Design
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    .import-controls {
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    .import-file-input {
+        min-width: auto;
+    }
+    
+    .import-buttons,
+    .export-buttons {
+        justify-content: stretch;
+    }
+    
+    .import-buttons .button,
+    .export-buttons .button {
+        flex: 1;
+    }
+}

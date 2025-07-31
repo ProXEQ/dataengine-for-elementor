@@ -77,8 +77,6 @@ class Parser
                 }
                 foreach ($conditions as $index => $condition_string) {
                     if ('__ELSE__' === $condition_string || $this->evaluate_condition($condition_string, $context_post_id, $loop_item_data)) {
-                        // CRITICAL FIX: We return the raw inner content. The outer while loop
-                        // will then process any nested [if] blocks within it. This prevents recursion.
                         return $outputs[$index];
                     }
                 }
@@ -108,7 +106,6 @@ class Parser
         switch ($operator) {
             case '==':
                 return $actual_value == $expected_value;
-            // ... (pozostałe operatory bez zmian) ...
             case '!=':
                 return $actual_value != $expected_value;
             case '>':

@@ -28,6 +28,7 @@ final class Plugin
     {
         $this->cache_manager = new Cache_Manager();
         add_action('plugins_loaded', [$this, 'init']);
+        add_action('de_cleanup_temp_files', [$this, 'cleanup_temp_files']);
     }
 
     /**
@@ -63,11 +64,16 @@ final class Plugin
             new \DataEngine\Core\Settings_Page();
         }
 
+        add_action('acf/include_field_types', [$this, 'register_acf_field_types']);
+        new \DataEngine\Core\Ajax_Handlers();
+
         add_action('wp_ajax_data_engine_get_data_dictionary', [$this, 'admin_ajax_get_data_dictionary']);
 
         add_action('elementor/elements/categories_registered', [$this, 'register_widget_category']);
         add_action('elementor/widgets/register', [$this, 'register_widgets']);
         add_action('elementor/editor/after_enqueue_scripts', [$this, 'enqueue_editor_scripts']);
+
+        add_action('wp_loaded', [$this, 'schedule_cleanup']);
     }
 
     /**
@@ -157,6 +163,7 @@ final class Plugin
             ]
         );
     }
+
 
     public function admin_ajax_get_data_dictionary(): void
     {
@@ -449,6 +456,25 @@ final class Plugin
                 ]
             ]
         ];
+    }
+    public function register_acf_field_types(): void
+    {
+        if (class_exists('acf_field')) {
+            new \DataEngine\ACF\Import_Export_Field();
+        }
+    }
+
+    public function schedule_cleanup(): void
+    {
+        if (!wp_next_scheduled('de_cleanup_temp_files')) {
+            wp_schedule_event(time(), 'hourly', 'de_cleanup_temp_files');
+        }
+    }
+
+    public function cleanup_temp_files(): void
+    {
+        $ajax_handlers = new \DataEngine\Core\Ajax_Handlers();
+        $ajax_handlers->cleanup_temp_files();
     }
 
 }
