@@ -67,19 +67,58 @@ class Parser
         // Use a while loop to correctly handle nested [if] blocks from the inside out.
         while (preg_match(self::IF_BLOCK_REGEX, $content)) {
             $content = preg_replace_callback(self::IF_BLOCK_REGEX, function ($matches) use ($context_post_id, $loop_item_data) {
-                $full_block_content = $matches[2];
-                $parts = preg_split('/(\[else if:([^\]]+)\]|\[else\])/s', $full_block_content, -1, PREG_SPLIT_DELIM_CAPTURE);
-                $conditions = [$matches[1]];
-                $outputs = [array_shift($parts)];
-                for ($i = 0; $i < count($parts); $i += 3) {
-                    $conditions[] = $parts[$i + 1] ?? '__ELSE__';
-                    $outputs[] = $parts[$i + 2] ?? '';
-                }
-                foreach ($conditions as $index => $condition_string) {
-                    if ('__ELSE__' === $condition_string || $this->evaluate_condition($condition_string, $context_post_id, $loop_item_data)) {
-                        return $outputs[$index];
+                $condition = $matches[1]; // Main [if:] condition
+                $full_block_content = $matches[2]; // Everything between [if:] and [/if]
+
+                // 🔥 FIX: Better parsing of else blocks
+                $parts = [];
+                $conditions = [];
+
+                // Split by [else if:] and [else] patterns
+                $split_pattern = '/(\[else\s+if:[^\]]+\]|\[else\])/';
+                $segments = preg_split($split_pattern, $full_block_content, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+                // First segment is always the main [if:] content
+                $conditions[] = $condition;
+                $parts[] = $segments[0];
+
+                // Process remaining segments in pairs (delimiter, content)
+                for ($i = 1; $i < count($segments); $i += 2) {
+                    $delimiter = $segments[$i] ?? '';
+                    $content_part = $segments[$i + 1] ?? '';
+
+                    if (preg_match('/\[else\s+if:([^\]]+)\]/', $delimiter, $else_if_matches)) {
+                        // [else if:] case
+                        $conditions[] = $else_if_matches[1];
+                        $parts[] = $content_part;
+                    } elseif (trim($delimiter) === '[else]') {
+                        // 🔥 FIX: Pure [else] case
+                        $conditions[] = '__ELSE__';
+                        $parts[] = $content_part;
                     }
                 }
+
+                // 🔥 DEBUG: Log the parsing results
+                Logger::log("Conditional parsing - Conditions: " . count($conditions) . ", Parts: " . count($parts), 'DEBUG');
+                for ($i = 0; $i < count($conditions); $i++) {
+                    Logger::log("Condition {$i}: '{$conditions[$i]}' -> Content: '" . substr($parts[$i] ?? '', 0, 50) . "...'", 'DEBUG');
+                }
+
+                // Evaluate conditions in order
+                foreach ($conditions as $index => $condition_string) {
+                    if ($condition_string === '__ELSE__') {
+                        // 🔥 FIX: Always execute else clause if reached
+                        Logger::log("Executing ELSE clause at index {$index}", 'DEBUG');
+                        return $parts[$index] ?? '';
+                    } elseif ($this->evaluate_condition($condition_string, $context_post_id, $loop_item_data)) {
+                        Logger::log("Condition '{$condition_string}' evaluated to TRUE at index {$index}", 'DEBUG');
+                        return $parts[$index] ?? '';
+                    } else {
+                        Logger::log("Condition '{$condition_string}' evaluated to FALSE at index {$index}", 'DEBUG');
+                    }
+                }
+
+                Logger::log("No conditions matched, returning empty string", 'DEBUG');
                 return ''; // No condition met.
             }, $content, 1);
         }
@@ -91,40 +130,64 @@ class Parser
      */
     private function evaluate_condition(string $condition_string, ?int $context_post_id, ?array $loop_item_data): bool
     {
-        $condition_regex = '/^\s*(%[^%]+%)\s*([=<>!]{1,2}|contains|not_contains)\s*\'?([^\']*)\'?\s*$/';
-        if (!preg_match($condition_regex, $condition_string, $matches))
+        $condition_regex = '/^\s*(%[^%]+%)\s*(==|!=|>=|<=|>|<|contains|not_contains|empty|not_empty)(?:\s+\'?([^\']*)\'?)?\s*$/';
+        if (!preg_match($condition_regex, $condition_string, $matches)) {
+            Logger::log("Invalid condition format: '{$condition_string}'", 'DEBUG');
             return false;
+        }
 
         $tag = $matches[1];
         $operator = $matches[2];
-        $expected_value = $matches[3];
+        $expected_value = $matches[3] ?? ''; // Optional for empty/not_empty
 
         // CRITICAL FIX: We now use process_tags directly to resolve the value,
         // avoiding a recursive call to the full process_content method.
         $actual_value = $this->process_tags($tag, $context_post_id, $loop_item_data);
+        
+        // 🔥 DEBUG: Log the comparison
+        Logger::log("Evaluating: '{$actual_value}' {$operator} '{$expected_value}'", 'DEBUG');
 
+        $result = false;
         switch ($operator) {
             case '==':
-                return $actual_value == $expected_value;
+                $result = $actual_value == $expected_value;
+                break;
             case '!=':
-                return $actual_value != $expected_value;
+                $result = $actual_value != $expected_value;
+                break;
             case '>':
-                return (float) $actual_value > (float) $expected_value;
+                $result = (float) $actual_value > (float) $expected_value;
+                break;
             case '<':
-                return (float) $actual_value < (float) $expected_value;
+                $result = (float) $actual_value < (float) $expected_value;
+                break;
             case '>=':
-                return (float) $actual_value >= (float) $expected_value;
+                $result = (float) $actual_value >= (float) $expected_value;
+                break;
             case '<=':
-                return (float) $actual_value <= (float) $expected_value;
+                $result = (float) $actual_value <= (float) $expected_value;
+                break;
             case 'contains':
-                return str_contains((string) $actual_value, (string) $expected_value);
+                $result = str_contains((string) $actual_value, (string) $expected_value);
+                break;
             case 'not_contains':
-                return !str_contains((string) $actual_value, (string) $expected_value);
+                $result = !str_contains((string) $actual_value, (string) $expected_value);
+                break;
+            // 🔥 NEW: Empty/not_empty operators
+            case 'empty':
+                $result = $this->is_empty_value($actual_value);
+                break;
+            case 'not_empty':
+                $result = !$this->is_empty_value($actual_value);
+                break;
             default:
-                return false;
+                Logger::log("Unknown operator: '{$operator}'", 'DEBUG');
+                $result = false;
         }
+        
+        Logger::log("Condition result: " . ($result ? 'TRUE' : 'FALSE'), 'DEBUG');
+        return $result;
     }
-
     /**
      * Processes [fallback] blocks, now aware of loop context.
      */
@@ -250,10 +313,10 @@ class Parser
                 // Handle filters for array values
                 if (is_array($value)) {
                     // For arrays, we need to process them first, then apply filters
-                    $filtered_values = array_filter($value, function($item) {
+                    $filtered_values = array_filter($value, function ($item) {
                         return !empty($item) && $item !== null && $item !== '';
                     });
-                    
+
                     if (!empty($filtered_values)) {
                         $string_value = implode(', ', $filtered_values);
                         $filters = $this->parse_filters($filters_string);
@@ -467,14 +530,66 @@ class Parser
 
         return implode(', ', $values);
     }
-    
+
     private function clear_taxonomy_context(): void
     {
         $this->taxonomy_context = [];
     }
-    
+
     public function get_taxonomy_context(string $field_name): array
     {
         return $this->taxonomy_context[$field_name] ?? [];
+    }
+    private function is_empty_value(mixed $value): bool
+    {
+        // Handle null and false
+        if ($value === null || $value === false) {
+            return true;
+        }
+        
+        // Handle empty strings (but not "0")
+        if ($value === '') {
+            return true;
+        }
+        
+        // Handle arrays
+        if (is_array($value)) {
+            // Empty array is empty
+            if (empty($value)) {
+                return true;
+            }
+            
+            // Array with only empty/null values is considered empty
+            foreach ($value as $item) {
+                if (!$this->is_empty_value($item)) {
+                    return false; // Found non-empty item
+                }
+            }
+            return true; // All items were empty
+        }
+        
+        // Handle objects
+        if (is_object($value)) {
+            // For WP_Term objects, check if they have meaningful data
+            if ($value instanceof \WP_Term) {
+                return empty($value->name);
+            }
+            
+            // For other objects, consider them non-empty if they exist
+            return false;
+        }
+        
+        // Handle numeric values - "0" is NOT empty, 0 is NOT empty
+        if (is_numeric($value)) {
+            return false;
+        }
+        
+        // Handle strings - trim whitespace and check
+        if (is_string($value)) {
+            return trim($value) === '';
+        }
+        
+        // Default: use PHP's empty() but exclude "0"
+        return empty($value) && $value !== '0' && $value !== 0;
     }
 }
