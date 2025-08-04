@@ -208,19 +208,62 @@ final class Plugin
             'filters' => $this->get_available_filters()
         ];
 
-        // Get ACF fields for the resolved post
-        $fields = get_field_objects($post_id);
-        \DataEngine\Utils\Logger::log('ACF fields found for post ' . $post_id . ': ' . count($fields));
+        // 🔥 FIX: Enhanced ACF field detection for field groups
+        $fields = [];
 
-        // If no fields found, try fallback methods
+        // Method 1: Get field objects with values first
+        $field_objects = get_field_objects($post_id);
+        if ($field_objects) {
+            $fields = array_merge($fields, $field_objects);
+            \DataEngine\Utils\Logger::log('Found ' . count($field_objects) . ' field objects with values for post ' . $post_id);
+        }
+
+        // 🔥 Method 2: Get ALL fields from field groups assigned to this post (including empty ones)
+        $field_groups = acf_get_field_groups(['post_id' => $post_id]);
+        \DataEngine\Utils\Logger::log('Found ' . count($field_groups) . ' field groups assigned to post ' . $post_id);
+
+        foreach ($field_groups as $group) {
+            \DataEngine\Utils\Logger::log('Processing field group: ' . $group['title'] . ' (key: ' . $group['key'] . ')');
+
+            $group_fields = acf_get_fields($group['key']);
+
+            if ($group_fields) {
+                foreach ($group_fields as $field) {
+                    // Add field if not already present (from field objects)
+                    if (!isset($fields[$field['name']])) {
+                        $fields[$field['name']] = [
+                            'name' => $field['name'],
+                            'label' => $field['label'],
+                            'type' => $field['type'],
+                            'key' => $field['key'],
+                            'value' => null // Field from group, no value yet
+                        ];
+
+                        // Add sub_fields for repeater
+                        if ($field['type'] === 'repeater' && !empty($field['sub_fields'])) {
+                            $fields[$field['name']]['sub_fields'] = $field['sub_fields'];
+                        }
+                        // Add layouts for flexible content
+                        elseif ($field['type'] === 'flexible_content' && !empty($field['layouts'])) {
+                            $fields[$field['name']]['layouts'] = $field['layouts'];
+                        }
+
+                        \DataEngine\Utils\Logger::log('Added field from group: ' . $field['name'] . ' (type: ' . $field['type'] . ')');
+                    } else {
+                        \DataEngine\Utils\Logger::log('Field already exists (has value): ' . $field['name']);
+                    }
+                }
+            }
+        }
+
+        // 🔥 Method 3: Fallback - get all field groups globally if still no fields found
         if (empty($fields)) {
-            \DataEngine\Utils\Logger::log('No fields found for post ID: ' . $post_id . '. Trying fallback methods...');
+            \DataEngine\Utils\Logger::log('No fields found for post ID: ' . $post_id . '. Trying global fallback...');
 
-            // Fallback 1: Get all available field groups
-            $field_groups = acf_get_field_groups();
+            $all_field_groups = acf_get_field_groups();
 
-            if ($field_groups) {
-                foreach ($field_groups as $group) {
+            if ($all_field_groups) {
+                foreach ($all_field_groups as $group) {
                     $group_fields = acf_get_fields($group['key']);
 
                     if ($group_fields) {
@@ -234,15 +277,19 @@ final class Plugin
 
                             if ($field['type'] === 'repeater' && !empty($field['sub_fields'])) {
                                 $fields[$field['name']]['sub_fields'] = $field['sub_fields'];
+                            } elseif ($field['type'] === 'flexible_content' && !empty($field['layouts'])) {
+                                $fields[$field['name']]['layouts'] = $field['layouts'];
                             }
                         }
                     }
                 }
-                \DataEngine\Utils\Logger::log('Found ' . count($fields) . ' fields using fallback method.');
+                \DataEngine\Utils\Logger::log('Found ' . count($fields) . ' fields using global fallback method.');
             }
         }
 
-        // Process fields
+        \DataEngine\Utils\Logger::log('Total fields after processing: ' . count($fields));
+
+        // Process fields for dictionary
         if ($fields) {
             foreach ($fields as $field) {
                 if ($field['type'] === 'repeater')
@@ -300,7 +347,7 @@ final class Plugin
             }
         }
 
-        // Handle repeater context
+        // Handle repeater context (unchanged)
         if ($repeater_context_field) {
             $repeater_field_object = null;
 
@@ -397,16 +444,16 @@ final class Plugin
                 'label' => 'Truncate text',
                 'description' => 'Limits text to specified length',
                 'args' => [
-                    ['name' => 'length', 'type' => 'number', 'default' => 100]
-                ]
+                        ['name' => 'length', 'type' => 'number', 'default' => 100]
+                    ]
             ],
             [
                 'name' => 'date_format',
                 'label' => 'Format date',
                 'description' => 'Formats date according to PHP date format',
                 'args' => [
-                    ['name' => 'format', 'type' => 'string', 'default' => 'Y-m-d']
-                ]
+                        ['name' => 'format', 'type' => 'string', 'default' => 'Y-m-d']
+                    ]
             ],
             [
                 'name' => 'strip_tags',
@@ -419,41 +466,41 @@ final class Plugin
                 'label' => 'Limit terms',
                 'description' => 'limits the number of terms in taxonomy displayed',
                 'args' => [
-                    ['name' => 'limit', 'type' => 'number', 'default' => 10]
-                ]
+                        ['name' => 'limit', 'type' => 'number', 'default' => 10]
+                    ]
             ],
             [
                 'name' => 'exclude',
                 'label' => 'Exclude terms',
                 'description' => 'excludes specific terms by IDs',
                 'args' => [
-                    ['name' => 'ids', 'type' => 'string', 'default' => '']
-                ]
+                        ['name' => 'ids', 'type' => 'string', 'default' => '']
+                    ]
             ],
             [
                 'name' => 'separator',
                 'label' => 'Change separator',
                 'description' => 'changes the separator between terms',
                 'args' => [
-                    ['name' => 'separator', 'type' => 'string', 'default' => '" / "']
-                ]
+                        ['name' => 'separator', 'type' => 'string', 'default' => '" / "']
+                    ]
             ],
             [
                 'name' => 'wrap',
                 'label' => 'Wrap text',
                 'description' => 'wraps text in specified HTML tags',
                 'args' => [
-                    ['name' => 'prefix', 'type' => 'string', 'default' => '<span>'],
-                    ['name' => 'suffix', 'type' => 'string', 'default' => '</span>']
-                ]
+                        ['name' => 'prefix', 'type' => 'string', 'default' => '<span>'],
+                        ['name' => 'suffix', 'type' => 'string', 'default' => '</span>']
+                    ]
             ],
             [
                 'name' => 'sort',
                 'label' => 'Sort terms',
                 'description' => 'sorts taxonomy terms by specified property',
                 'args' => [
-                    ['name' => 'sort by', 'type' => 'string', 'default' => 'name']
-                ]
+                        ['name' => 'sort by', 'type' => 'string', 'default' => 'name']
+                    ]
             ]
         ];
     }
